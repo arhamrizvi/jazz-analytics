@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Edit Query — Jazz BA Portal{% endblock %}
+{% set active_section='admin' %}{% set active_page='qm' %}
+{% block head_styles %}
+.admin-wrap{padding:24px 32px;display:flex;flex-direction:column;gap:18px;max-width:1300px;margin:0 auto;width:100%}
+.pg-head{display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.pg-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800}
+.pg-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.admin-nav{display:flex;gap:5px;margin-left:auto}
+.an{padding:5px 12px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:10px;text-decoration:none;transition:all .13s;font-family:'DM Mono',monospace}
+.an:hover{border-color:var(--accent);color:var(--accent)}
+.layout{display:grid;grid-template-columns:1fr 380px;gap:16px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.card-head{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,rgba(0,201,245,.04),transparent)}
+.card-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700}
+.card-body{padding:16px;display:flex;flex-direction:column;gap:12px}
+.meta-row{display:flex;gap:8px;flex-wrap:wrap}
+.mp{font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(255,255,255,.04);color:var(--muted)}
+.mp-src-raid{background:rgba(0,201,245,.09);color:#00c9f5}
+.mp-src-hive{background:rgba(167,139,250,.09);color:#a78bfa}
+.sql-editor{width:100%;min-height:320px;resize:vertical;background:#050a0f;border:1px solid var(--border2);border-radius:6px;color:#a8d4f5;padding:12px 14px;font-family:'DM Mono',monospace;font-size:11px;line-height:1.65;outline:none;transition:border-color .18s;tab-size:2}
+.sql-editor:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,201,245,.07)}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.field input{background:#050a0f;border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:7px 9px;font-family:'DM Mono',monospace;font-size:11px;outline:none;transition:border-color .18s;width:100%}
+.field input:focus{border-color:var(--accent)}
+.btn-row{display:flex;gap:8px}
+.save-btn{flex:1;padding:9px;background:linear-gradient(135deg,rgba(0,201,245,.1),rgba(108,63,255,.1));border:1px solid var(--accent);border-radius:6px;color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:.08em;cursor:pointer;transition:all .18s}
+.save-btn:hover{box-shadow:0 0 14px rgba(0,201,245,.2)}
+.save-btn:disabled{opacity:.32;cursor:not-allowed}
+.back-btn{padding:9px 14px;border:1px solid var(--border2);border-radius:6px;color:var(--muted);background:transparent;font-size:10px;cursor:pointer;font-family:'DM Mono',monospace;text-decoration:none;display:flex;align-items:center;transition:all .13s}
+.back-btn:hover{border-color:var(--accent);color:var(--accent)}
+.save-msg{font-size:10px;min-height:15px;text-align:right}
+.msg-ok{color:var(--success)}.msg-err{color:var(--danger)}.msg-info{color:var(--muted)}
+/* audit sidebar */
+.audit-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;position:sticky;top:68px}
+.audit-empty{padding:20px;text-align:center;color:var(--muted);font-size:10px}
+.ae{padding:12px 14px;border-bottom:1px solid var(--border);transition:background .1s}
+.ae:last-child{border-bottom:none}
+.ae:hover{background:rgba(255,255,255,.02)}
+.ae-row1{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.ae-who{font-family:'Syne',sans-serif;font-size:10px;font-weight:700}
+.ae-when{font-size:9px;color:var(--muted);margin-left:auto}
+.ae-note{font-size:9px;color:var(--muted);margin-bottom:6px}
+.ae-sql{font-size:9px;color:var(--muted2);background:#050a0f;border:1px solid var(--border);border-radius:3px;padding:7px;max-height:80px;overflow:hidden;white-space:pre-wrap;word-break:break-all;position:relative}
+.ae-sql::after{content:'';position:absolute;bottom:0;left:0;right:0;height:20px;background:linear-gradient(transparent,#050a0f)}
+.restore-btn{margin-top:6px;font-size:9px;padding:3px 9px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Mono',monospace;transition:all .13s}
+.restore-btn:hover{border-color:var(--warn);color:var(--warn)}
+{% endblock %}
+{% block content %}
+<div class="admin-wrap">
+  <div class="pg-head">
+    <div>
+      <div class="pg-title">Edit Query</div>
+      <div class="pg-sub">{{ q.component_label }} · {{ q.source|upper }} · every save is logged</div>
+    </div>
+    <div class="admin-nav">
+      <a href="/admin/queries" class="an">← All Queries</a>
+      <a href="/admin/logout"  class="an">Sign Out ({{ admin }})</a>
+    </div>
+  </div>
+  <div class="layout">
+    <!-- Editor -->
+    <div class="card">
+      <div class="card-head"><span class="card-title">SQL Editor</span><span style="font-size:9px;color:var(--muted);margin-left:auto">ID #{{ q.id }}</span></div>
+      <div class="card-body">
+        <div class="meta-row">
+          <span class="mp">{{ q.group }}</span>
+          <span class="mp mp-src-{{ q.source }}">{{ q.source|upper }}</span>
+          <span class="mp">Last saved {{ q.updated_at[:16]|replace('T',' ') }} UTC by {{ q.updated_by }}</span>
+        </div>
+        <textarea class="sql-editor" id="sqlEditor" spellcheck="false">{{ q.query_sql }}</textarea>
+        <div class="field">
+          <label>Change note (saved to audit log)</label>
+          <input type="text" id="noteField" placeholder="e.g. added service_class filter for Q3"/>
+        </div>
+        <div class="btn-row">
+          <a href="/admin/queries" class="back-btn">Cancel</a>
+          <button class="save-btn" id="saveBtn" onclick="saveQuery()">💾 SAVE</button>
+        </div>
+        <div class="save-msg" id="saveMsg"></div>
+      </div>
+    </div>
+    <!-- Audit -->
+    <div class="audit-card">
+      <div class="card-head"><span class="card-title">Change History</span><span style="font-size:9px;color:var(--muted);margin-left:auto">{{ audit|length }} entries</span></div>
+      {% if not audit %}
+        <div class="audit-empty">No changes yet — this is the seeded query.</div>
+      {% else %}
+        <div id="auditList">
+        {% for e in audit %}
+        <div class="ae">
+          <div class="ae-row1"><span class="ae-who">{{ e.changed_by }}</span><span class="ae-when">{{ e.changed_at[:16]|replace('T',' ') }} UTC</span></div>
+          <div class="ae-note">{{ e.note or '—' }}</div>
+          <div class="ae-sql">{{ e.old_sql }}</div>
+          <button class="restore-btn" onclick="restoreVersion({{ e.id }})">↩ Restore</button>
+        </div>
+        {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+<script>
+const QID={{ q.id }};
+async function saveQuery(){
+  const sql=document.getElementById('sqlEditor').value.trim();
+  const note=document.getElementById('noteField').value.trim()||'manual edit';
+  const btn=document.getElementById('saveBtn');
+  const msg=document.getElementById('saveMsg');
+  if(!sql){msg.className='save-msg msg-err';msg.textContent='⚠ SQL cannot be empty';return;}
+  btn.disabled=true;msg.className='save-msg msg-info';msg.textContent='Saving…';
+  const r=await fetch(`/admin/api/queries/${QID}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({query_sql:sql,note})});
+  const d=await r.json();btn.disabled=false;
+  if(r.ok){
+    msg.className='save-msg msg-ok';msg.textContent='✓ Saved — old version recorded in audit log';
+    document.getElementById('noteField').value='';
+    const ar=await fetch(`/admin/api/queries/${QID}/audit`);
+    renderAudit(await ar.json());
+  } else {msg.className='save-msg msg-err';msg.textContent='⚠ '+(d.error||'Error');}
+}
+async function restoreVersion(aid){
+  if(!confirm('Restore this version? Current SQL will be saved to audit first.'))return;
+  const r=await fetch(`/admin/api/queries/${QID}/restore/${aid}`,{method:'POST'});
+  if((await r.json()).ok)location.reload();else alert('Restore failed');
+}
+function renderAudit(entries){
+  const list=document.getElementById('auditList');
+  if(!list){location.reload();return;}
+  list.innerHTML=entries.map(e=>`<div class="ae">
+    <div class="ae-row1"><span class="ae-who">${e.changed_by}</span><span class="ae-when">${e.changed_at.slice(0,16).replace('T',' ')} UTC</span></div>
+    <div class="ae-note">${e.note||'—'}</div>
+    <div class="ae-sql">${esc(e.old_sql)}</div>
+    <button class="restore-btn" onclick="restoreVersion(${e.id})">↩ Restore</button>
+  </div>`).join('');
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+document.getElementById('sqlEditor').addEventListener('keydown',e=>{
+  if(e.key==='Tab'){e.preventDefault();const t=e.target,s=t.selectionStart;
+    t.value=t.value.slice(0,s)+'  '+t.value.slice(t.selectionEnd);
+    t.selectionStart=t.selectionEnd=s+2;}
+});
+</script>
+{% endblock %}

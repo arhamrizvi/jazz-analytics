@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Query Manager — Jazz BA Portal{% endblock %}
+{% set active_section='admin' %}{% set active_page='qm' %}
+{% block head_styles %}
+.admin-wrap{padding:24px 32px;display:flex;flex-direction:column;gap:18px;max-width:1100px;margin:0 auto;width:100%}
+.pg-head{display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.pg-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800}
+.pg-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.admin-nav{display:flex;gap:5px;margin-left:auto}
+.an{padding:5px 12px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:10px;text-decoration:none;transition:all .13s;font-family:'DM Mono',monospace}
+.an:hover,.an.active{border-color:var(--accent);color:var(--accent);background:rgba(0,201,245,.07)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.card-head{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,rgba(0,201,245,.04),transparent)}
+.card-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700}
+.grp-row{font-family:'Syne',sans-serif;font-size:8px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:8px 16px 3px;background:rgba(255,255,255,.01);border-bottom:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:rgba(255,255,255,.02);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:8px;padding:8px 13px;text-align:left;border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap}
+td{padding:9px 13px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.02)}
+.badge-src{font-size:8px;padding:2px 6px;border-radius:3px;font-weight:500}
+.badge-raid{background:rgba(0,201,245,.09);color:#00c9f5;border:1px solid rgba(0,201,245,.2)}
+.badge-hive{background:rgba(167,139,250,.09);color:#a78bfa;border:1px solid rgba(167,139,250,.2)}
+.edit-link{font-size:9px;padding:3px 9px;border-radius:3px;border:1px solid var(--border2);color:var(--muted);text-decoration:none;transition:all .13s}
+.edit-link:hover{border-color:var(--accent);color:var(--accent)}
+.sql-snip{font-size:9px;color:var(--muted);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ts{font-size:9px;color:var(--muted)}
+{% endblock %}
+{% block content %}
+<div class="admin-wrap">
+  <div class="pg-head">
+    <div><div class="pg-title">Query Manager</div><div class="pg-sub">Edit live SQL · all saves are audited automatically</div></div>
+    <div class="admin-nav">
+      <a href="/admin/queries"     class="an active">Queries</a>
+      <a href="/admin/connections" class="an">Connections</a>
+      <a href="/admin/audit"       class="an">Audit Log</a>
+      <a href="/admin/users"       class="an">Users</a>
+      <a href="/admin/logout"      class="an">Sign Out ({{ admin }})</a>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="card-title">All Queries</span><span style="font-size:9px;color:var(--muted);margin-left:auto">{{ queries|length }} queries</span></div>
+    {% set ns=namespace(grp='') %}
+    <table><thead><tr><th>Component</th><th>Source</th><th>SQL Preview</th><th>Updated</th><th>By</th><th></th></tr></thead>
+    <tbody>
+    {% for q in queries %}
+      {% if q.group != ns.grp %}{% set ns.grp=q.group %}
+        <tr><td colspan="6" style="padding:0"><div class="grp-row">{{ q.group }}</div></td></tr>
+      {% endif %}
+      <tr>
+        <td><strong>{{ q.component_label }}</strong></td>
+        <td><span class="badge-src badge-{{ q.source }}">{{ q.source|upper }}</span></td>
+        <td><span class="sql-snip">{{ q.query_sql[:90] }}…</span></td>
+        <td><span class="ts">{{ q.updated_at[:16]|replace('T',' ') }}</span></td>
+        <td><span class="ts">{{ q.updated_by }}</span></td>
+        <td><a href="/admin/queries/{{ q.id }}" class="edit-link">Edit →</a></td>
+      </tr>
+    {% endfor %}
+    </tbody></table>
+  </div>
+</div>
+{% endblock %}

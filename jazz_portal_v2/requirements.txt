@@ -1,0 +1,9 @@
+flask>=3.0.0
+pandas>=2.0.0
+numpy>=1.24.0
+oracledb>=2.0.0
+pyhive>=0.7.0
+thrift>=0.16.0
+thrift-sasl>=0.4.3
+pure-sasl>=0.6.2
+openpyxl>=3.1.0

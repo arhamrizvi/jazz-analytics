@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Connections — Jazz BA Portal{% endblock %}
+{% set active_section='admin' %}{% set active_page='connections' %}
+{% block head_styles %}
+.admin-wrap{padding:24px 32px;display:flex;flex-direction:column;gap:18px;max-width:1100px;margin:0 auto;width:100%}
+.pg-head{display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.pg-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800}
+.pg-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.admin-nav{display:flex;gap:5px;margin-left:auto}
+.an{padding:5px 12px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:10px;text-decoration:none;transition:all .13s;font-family:'DM Mono',monospace}
+.an:hover,.an.active{border-color:var(--accent);color:var(--accent);background:rgba(0,201,245,.07)}
+.info{background:rgba(0,201,245,.05);border:1px solid rgba(0,201,245,.14);border-radius:6px;padding:12px 14px;font-size:10px;color:var(--muted);line-height:1.7}
+.info strong{color:var(--text)}
+.conn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(500px,1fr));gap:16px}
+.conn-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.conn-head{display:flex;align-items:center;gap:9px;padding:12px 16px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,rgba(0,201,245,.04),transparent)}
+.conn-icon{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.ci-oracle{background:rgba(240,64,64,.1);border:1px solid rgba(240,64,64,.22)}
+.ci-hive{background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.22)}
+.conn-label{font-family:'Syne',sans-serif;font-size:12px;font-weight:700}
+.conn-key-txt{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:1px}
+.conn-status{margin-left:auto;font-size:9px;padding:2px 8px;border-radius:3px;font-family:'Syne',sans-serif;font-weight:600;letter-spacing:.08em;border:1px solid var(--border2);color:var(--muted)}
+.st-ok{background:rgba(15,186,128,.09);color:var(--success);border-color:rgba(15,186,128,.25)}
+.st-fail{background:rgba(240,64,64,.09);color:var(--danger);border-color:rgba(240,64,64,.25)}
+.conn-body{padding:16px;display:flex;flex-direction:column;gap:10px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field.full{grid-column:1/-1}
+.field label{font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.field input,.field select{background:#080e16;border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:6px 8px;font-family:'DM Mono',monospace;font-size:11px;outline:none;transition:border-color .18s;width:100%}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.field input[type=password]{letter-spacing:.1em}
+.pw-hint{font-size:8px;color:var(--muted);margin-top:2px}
+.btn-row{display:flex;gap:7px}
+.save-btn{flex:1;padding:8px;background:linear-gradient(135deg,rgba(0,201,245,.1),rgba(108,63,255,.1));border:1px solid var(--accent);border-radius:5px;color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:10px;letter-spacing:.08em;cursor:pointer;transition:all .18s}
+.save-btn:hover{box-shadow:0 0 12px rgba(0,201,245,.18)}
+.save-btn:disabled{opacity:.32;cursor:not-allowed}
+.test-btn{padding:8px 13px;border:1px solid var(--border2);border-radius:5px;color:var(--muted);background:transparent;font-size:10px;cursor:pointer;font-family:'DM Mono',monospace;transition:all .13s;white-space:nowrap}
+.test-btn:hover{border-color:var(--success);color:var(--success)}
+.conn-msg{font-size:10px;min-height:14px}
+.msg-ok{color:var(--success)}.msg-err{color:var(--danger)}.msg-info{color:var(--muted)}
+.audit-toggle{font-size:9px;color:var(--muted);cursor:pointer;padding:7px 0 0;border-top:1px solid var(--border);display:flex;align-items:center;gap:5px;transition:color .13s}
+.audit-toggle:hover{color:var(--accent)}
+.audit-panel{display:none;margin-top:8px}
+.audit-panel.open{display:block}
+.arow{display:grid;grid-template-columns:100px 80px 1fr;gap:7px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.03);font-size:9px}
+.arow:last-child{border-bottom:none}
+{% endblock %}
+{% block content %}
+<div class="admin-wrap">
+  <div class="pg-head">
+    <div><div class="pg-title">Connection Manager</div><div class="pg-sub">Edit DB connections · changes take effect on next run · all saves audited</div></div>
+    <div class="admin-nav">
+      <a href="/admin/queries"     class="an">Queries</a>
+      <a href="/admin/connections" class="an active">Connections</a>
+      <a href="/admin/audit"       class="an">Audit Log</a>
+      <a href="/admin/users"       class="an">Users</a>
+      <a href="/admin/logout"      class="an">Sign Out ({{ admin }})</a>
+    </div>
+  </div>
+  <div class="info"><strong>How it works:</strong> Host, port, and credentials are stored in the portal database. Save here and the next validation run picks them up automatically. Passwords are never written to the audit log.</div>
+  <div class="conn-grid">
+    {% for c in connections %}
+    <div class="conn-card">
+      <div class="conn-head">
+        <div class="conn-icon ci-{{ c.db_type }}">{{ '🔴' if c.db_type=='oracle' else '🟡' }}</div>
+        <div><div class="conn-label">{{ c.label }}</div><div class="conn-key-txt">key: {{ c.conn_key }}</div></div>
+        <div class="conn-status" id="st_{{ c.conn_key }}">UNTESTED</div>
+      </div>
+      <div class="conn-body">
+        <div class="fg">
+          <div class="field full"><label>Label</label><input type="text" id="{{ c.conn_key }}_label" value="{{ c.label }}"/></div>
+          <div class="field"><label>Type</label>
+            <select id="{{ c.conn_key }}_db_type">
+              <option value="oracle" {{ 'selected' if c.db_type=='oracle' }}>Oracle</option>
+              <option value="hive"   {{ 'selected' if c.db_type=='hive' }}>Hive</option>
+            </select>
+          </div>
+          <div class="field"><label>Host / IP</label><input type="text" id="{{ c.conn_key }}_host" value="{{ c.host }}"/></div>
+          <div class="field"><label>Port</label><input type="number" id="{{ c.conn_key }}_port" value="{{ c.port }}"/></div>
+          <div class="field"><label>Database / Service</label><input type="text" id="{{ c.conn_key }}_db" value="{{ c.database }}"/></div>
+          <div class="field"><label>Username</label><input type="text" id="{{ c.conn_key }}_user" value="{{ c.username }}" autocomplete="off"/></div>
+          <div class="field full"><label>Password</label>
+            <input type="password" id="{{ c.conn_key }}_pw" placeholder="Leave blank to keep existing" autocomplete="new-password"/>
+            <span class="pw-hint">Never shown. Blank = keep current password.</span>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="test-btn" onclick="testConn('{{ c.conn_key }}')">⚡ Test</button>
+          <button class="save-btn" onclick="saveConn('{{ c.conn_key }}')">💾 Save</button>
+        </div>
+        <div class="conn-msg" id="msg_{{ c.conn_key }}"></div>
+        <div class="audit-toggle" onclick="toggleAudit('{{ c.conn_key }}')"><span>▸</span> Change history</div>
+        <div class="audit-panel" id="audit_{{ c.conn_key }}"><div style="font-size:9px;color:var(--muted);padding:6px 0">Loading…</div></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+<script>
+async function saveConn(key){
+  const btn=document.querySelector(`button[onclick="saveConn('${key}')"]`);
+  const msg=document.getElementById('msg_'+key);
+  btn.disabled=true;msg.className='conn-msg msg-info';msg.textContent='Saving…';
+  const body={conn_key:key,label:document.getElementById(key+'_label').value.trim(),
+    db_type:document.getElementById(key+'_db_type').value,
+    host:document.getElementById(key+'_host').value.trim(),
+    port:document.getElementById(key+'_port').value,
+    database:document.getElementById(key+'_db').value.trim(),
+    username:document.getElementById(key+'_user').value.trim(),
+    password:document.getElementById(key+'_pw').value};
+  const r=await fetch('/admin/api/connections',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();btn.disabled=false;
+  if(r.ok){msg.className='conn-msg msg-ok';msg.textContent='✓ Saved';document.getElementById(key+'_pw').value='';document.getElementById('st_'+key).className='conn-status';document.getElementById('st_'+key).textContent='UNTESTED';}
+  else{msg.className='conn-msg msg-err';msg.textContent='⚠ '+(d.error||'Error');}
+}
+async function testConn(key){
+  const msg=document.getElementById('msg_'+key);const badge=document.getElementById('st_'+key);
+  msg.className='conn-msg msg-info';msg.textContent='Testing…';badge.textContent='…';badge.className='conn-status';
+  const r=await fetch(`/admin/api/connections/${key}/test`,{method:'POST'});
+  const d=await r.json();
+  if(d.ok){msg.className='conn-msg msg-ok';msg.textContent='✓ '+d.message;badge.className='conn-status st-ok';badge.textContent='OK';}
+  else{msg.className='conn-msg msg-err';msg.textContent='✗ '+d.message;badge.className='conn-status st-fail';badge.textContent='FAIL';}
+}
+async function toggleAudit(key){
+  const panel=document.getElementById('audit_'+key);
+  const open=panel.classList.toggle('open');
+  if(open){
+    const r=await fetch(`/admin/api/connections/${key}/audit`);
+    const entries=await r.json();
+    panel.innerHTML=entries.length?entries.map(e=>`<div class="arow"><span style="color:var(--text);font-weight:500">${e.changed_by}</span><span style="color:var(--muted)">${e.changed_at.slice(0,10)}</span><span style="color:var(--muted)">${e.note||'—'}</span></div>`).join(''):'<div style="font-size:9px;color:var(--muted);padding:5px 0">No changes yet.</div>';
+  }
+}
+</script>
+{% endblock %}

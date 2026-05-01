@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Admin Login — Jazz BA Portal{% endblock %}
+{% block head_styles %}
+.login-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:40px}
+.login-box{width:340px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.login-head{padding:22px 24px 18px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,rgba(0,201,245,.05),rgba(108,63,255,.05))}
+.login-icon{font-size:26px;margin-bottom:9px}
+.login-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:800}
+.login-sub{font-size:10px;color:var(--muted);margin-top:3px}
+.login-body{padding:22px 24px;display:flex;flex-direction:column;gap:14px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.field input{background:#080e16;border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:8px 10px;font-family:'DM Mono',monospace;font-size:12px;outline:none;transition:border-color .18s;width:100%}
+.field input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,201,245,.09)}
+.login-btn{width:100%;padding:10px;background:linear-gradient(135deg,rgba(0,201,245,.11),rgba(108,63,255,.11));border:1px solid var(--accent);border-radius:6px;color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:12px;letter-spacing:.08em;cursor:pointer;transition:all .18s}
+.login-btn:hover{box-shadow:0 0 16px rgba(0,201,245,.22)}
+.err{background:rgba(240,64,64,.07);border:1px solid rgba(240,64,64,.28);color:var(--danger);font-size:10px;padding:8px 11px;border-radius:5px}
+{% endblock %}
+{% block content %}
+<div class="login-wrap">
+  <div class="login-box">
+    <div class="login-head">
+      <div class="login-icon">🔐</div>
+      <div class="login-title">Admin Access</div>
+      <div class="login-sub">Query Manager · Connections · Audit Log</div>
+    </div>
+    <form class="login-body" method="POST">
+      {% if error %}<div class="err">⚠ {{ error }}</div>{% endif %}
+      <div class="field"><label>Username</label><input type="text" name="username" autofocus/></div>
+      <div class="field"><label>Password</label><input type="password" name="password"/></div>
+      <button type="submit" class="login-btn">SIGN IN →</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,938 @@
+{% extends "base.html" %}
+{% block title %}Revenue Validation — Jazz BA Portal{% endblock %}
+{% set active_section = 'controls' %}
+{% set active_page = 'rv' %}
+
+{% block head_styles %}
+/* ── PAGE LAYOUT ── */
+.rv-page { display: grid; grid-template-columns: 272px 1fr; flex: 1; min-height: 0 }
+.sidebar {
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  height: calc(100vh - var(--nav-h));
+  position: sticky;
+  top: var(--nav-h);
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.sb-sec { padding: 14px 13px; border-bottom: 1px solid var(--border) }
+.sb-label {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 10px;
+  font-family: 'DM Mono', monospace;
+}
+.main {
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  background: var(--bg);
+  transition: background var(--dur) var(--ease);
+}
+
+/* ── FORM CONTROLS ── */
+.date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 7px }
+.field    { display: flex; flex-direction: column; gap: 4px }
+.field label {
+  font-size: 8px;
+  color: var(--text2);
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  font-family: 'DM Mono', monospace;
+}
+input[type=date], select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 7px 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  outline: none;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+input[type=date]:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-dim);
+}
+input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.4) }
+
+/* ── SOURCE PILLS ── */
+.src-pills { display: flex; gap: 5px }
+.sp {
+  flex: 1;
+  padding: 6px 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  text-align: center;
+  transition: all var(--dur) var(--ease);
+}
+.sp:hover { border-color: var(--accent); color: var(--text) }
+/* Active states per source */
+.sp.ar { background: var(--accent-dim); border-color: var(--accent); color: var(--accent) }
+.sp.ah { background: rgba(138,23,69,.14); border-color: #C2547A; color: #E88FAA }
+.sp.ab { background: rgba(0,200,122,.09); border-color: #00C87A; color: #00C87A }
+
+.both-dates { display: none; margin-top: 10px; grid-template-columns: 1fr 1fr; gap: 7px }
+.both-dates.show { display: grid }
+.both-src-label {
+  grid-column: 1 / -1;
+  font-size: 8px;
+  color: var(--text2);
+  letter-spacing: .08em;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── COMPONENT TREE ── */
+.sel-row { display: flex; gap: 5px; margin-bottom: 9px }
+.sel-btn {
+  flex: 1;
+  padding: 5px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text2);
+  font-size: 9px;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  transition: all var(--dur) var(--ease);
+}
+.sel-btn:hover { border-color: var(--accent); color: var(--text) }
+.grp-label {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text2);
+  padding: 7px 3px 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'DM Mono', monospace;
+}
+.grp-label::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gc, var(--accent));
+  flex-shrink: 0;
+}
+.comp-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 7px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease);
+  margin-bottom: 1px;
+}
+.comp-item:hover { background: rgba(255,255,255,.03) }
+.comp-item.sel   { background: var(--accent-dim); border-color: rgba(225,26,61,.20) }
+.comp-item input[type=checkbox] {
+  accent-color: var(--accent);
+  cursor: pointer;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+.ci-label { font-size: 10px; flex: 1 }
+.ci-tags  { display: flex; gap: 2px }
+.tag { font-size: 8px; padding: 1px 4px; border-radius: 2px; border: 1px solid }
+.tag-r { background: rgba(225,26,61,.10); color: #E88; border-color: rgba(225,26,61,.25) }
+.tag-h { background: rgba(167,139,250,.09); color: #a78bfa; border-color: rgba(167,139,250,.22) }
+
+/* ── RUN BUTTON ── */
+.run-btn {
+  width: 100%;
+  padding: 11px;
+  background: var(--accent-grad);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: .09em;
+  cursor: pointer;
+  transition: opacity var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  box-shadow: var(--accent-glow);
+}
+.run-btn:hover  { opacity: .9; box-shadow: 0 0 30px rgba(225,26,61,.35) }
+.run-btn:active { opacity: .8 }
+.run-btn:disabled { opacity: .32; cursor: not-allowed; box-shadow: none }
+
+/* ── PROGRESS ── */
+.prog-bar { height: 2px; background: var(--border); border-radius: 2px; overflow: hidden; display: none }
+.prog-fill {
+  height: 100%;
+  width: 0;
+  background: var(--accent-grad);
+  transition: width .28s;
+  border-radius: 2px;
+}
+.prog-label { font-size: 9px; color: var(--text2); text-align: right; margin-top: 4px; display: none; font-family: 'DM Mono', monospace }
+
+/* ── PAGE HEADER ── */
+.pg-head { display: flex; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--border) }
+.breadcrumb { font-size: 10px; color: var(--text2); margin-bottom: 5px; font-family: 'DM Mono', monospace }
+.breadcrumb a { color: var(--text2); text-decoration: none }
+.breadcrumb a:hover { color: var(--text) }
+.pg-title { font-size: 19px; font-weight: 800; letter-spacing: -.02em }
+.pg-sub   { font-size: 10px; color: var(--text2); margin-top: 3px; font-family: 'DM Mono', monospace }
+.status-badge {
+  margin-left: auto;
+  font-size: 9px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: .09em;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  background: var(--border);
+  font-family: 'DM Mono', monospace;
+  text-transform: uppercase;
+}
+.status-badge.running {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: rgba(225,26,61,.30);
+}
+.status-badge.done {
+  background: rgba(0,200,122,.09);
+  color: var(--success);
+  border-color: rgba(0,200,122,.28);
+}
+@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+.pulse {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1.1s ease-in-out infinite;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+/* ── SUMMARY CARDS ── */
+.sum-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 11px }
+.sum-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px 14px;
+  position: relative;
+  overflow: hidden;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.sum-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--sc-c, var(--accent));
+}
+.sc-name { font-size: 8px; color: var(--text2); letter-spacing: .10em; text-transform: uppercase; margin-bottom: 5px; font-family: 'DM Mono', monospace }
+.sc-val  { font-size: 18px; font-weight: 800; color: var(--sc-c, var(--accent)); letter-spacing: -.02em }
+.sc-evt  { font-size: 9px; color: var(--text2); margin-top: 3px; font-family: 'DM Mono', monospace }
+
+/* ── CHARTS ── */
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 15px;
+  transition: background var(--dur) var(--ease);
+}
+.chart-card.wide { grid-column: 1 / -1 }
+.ct {
+  font-size: 9px;
+  color: var(--text2);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 11px;
+  font-family: 'DM Mono', monospace;
+}
+canvas { max-height: 200px }
+
+/* ── RESULTS ── */
+.results-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: background var(--dur) var(--ease);
+}
+.res-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(90deg, var(--accent-dim), transparent);
+}
+.res-title { font-size: 12px; font-weight: 700 }
+.tabs-bar {
+  display: flex;
+  gap: 2px;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+.tab {
+  padding: 4px 11px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  white-space: nowrap;
+  transition: all var(--dur) var(--ease);
+}
+.tab:hover { color: var(--text) }
+.tab.active {
+  background: var(--accent-dim);
+  border-color: rgba(225,26,61,.28);
+  color: var(--accent);
+}
+.tab-panel { display: none; padding: 15px }
+.tab-panel.active { display: block }
+
+/* ── TABLES ── */
+.tbl-wrap { overflow-x: auto }
+table { width: 100%; border-collapse: collapse; font-size: 11px }
+th {
+  background: var(--border);
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: 8px;
+  padding: 8px 11px;
+  text-align: right;
+  border-bottom: 1px solid var(--border2);
+  font-weight: 500;
+  white-space: nowrap;
+  font-family: 'DM Mono', monospace;
+}
+th:first-child, th:nth-child(2) { text-align: left }
+td {
+  padding: 7px 11px;
+  border-bottom: 1px solid rgba(255,255,255,.03);
+  text-align: right;
+  font-family: 'DM Mono', monospace;
+}
+td:first-child { text-align: left; color: var(--text2) }
+td:nth-child(2){ text-align: left }
+tr:hover td { background: rgba(255,255,255,.02) }
+.pos { color: var(--success) }
+.neg { color: var(--danger) }
+.zer { color: var(--text2) }
+.src-raid { color: #E88FAA }
+.src-hive { color: #a78bfa }
+
+/* ── EMPTY / NOTIF ── */
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  color: var(--text2);
+  text-align: center;
+  padding: 60px 24px;
+}
+.empty-icon { font-size: 42px; opacity: .2 }
+.empty p    { font-size: 11px; line-height: 1.7; max-width: 300px }
+.notif {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  padding: 10px 15px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  max-width: 290px;
+  transform: translateY(60px);
+  opacity: 0;
+  transition: all .23s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'DM Mono', monospace;
+}
+.notif.show  { transform: translateY(0); opacity: 1 }
+.notif-ok    { background: var(--surface2); border: 1px solid var(--success); color: var(--success) }
+.notif-err   { background: var(--surface2); border: 1px solid var(--danger);  color: var(--danger) }
+
+@media (max-width: 840px) {
+  .rv-page { grid-template-columns: 1fr }
+  .sidebar { position: static; height: auto }
+  .chart-grid { grid-template-columns: 1fr }
+}
+{% endblock %}
+
+{% block content %}
+<div class="rv-page">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar">
+
+    <div class="sb-sec">
+      <div class="sb-label">Date Range</div>
+      <div class="date-row">
+        <div class="field"><label>Start</label><input type="date" id="gStart"/></div>
+        <div class="field"><label>End</label>  <input type="date" id="gEnd"/></div>
+      </div>
+    </div>
+
+    <div class="sb-sec">
+      <div class="sb-label">Data Source</div>
+      <div class="src-pills">
+        <button class="sp ar" onclick="setSrc('raid',this)">RAID</button>
+        <button class="sp"    onclick="setSrc('hive',this)">HIVE</button>
+        <button class="sp"    onclick="setSrc('both',this)">BOTH</button>
+      </div>
+      <div class="both-dates" id="bothDates">
+        <span class="both-src-label" style="margin-top:8px">RAID dates</span>
+        <div class="field"><label>Start</label><input type="date" id="rStart"/></div>
+        <div class="field"><label>End</label>  <input type="date" id="rEnd"/></div>
+        <span class="both-src-label" style="margin-top:4px">Hive dates</span>
+        <div class="field"><label>Start</label><input type="date" id="hStart"/></div>
+        <div class="field"><label>End</label>  <input type="date" id="hEnd"/></div>
+      </div>
+    </div>
+
+    <div class="sb-sec" style="flex:1;overflow-y:auto">
+      <div class="sb-label">Components</div>
+      <div class="sel-row">
+        <button class="sel-btn" onclick="selAll(true)">All</button>
+        <button class="sel-btn" onclick="selAll(false)">None</button>
+      </div>
+      <div id="compTree"></div>
+    </div>
+
+    <div class="sb-sec">
+      <div class="prog-bar" id="progBar"><div class="prog-fill" id="progFill"></div></div>
+      <div class="prog-label" id="progLabel"></div>
+    </div>
+
+    <div style="padding:0 13px 13px">
+      <button class="run-btn" id="runBtn" onclick="runValidation()">&#9654; RUN VALIDATION</button>
+    </div>
+
+  </aside>
+
+  <!-- ═══ MAIN ═══ -->
+  <main class="main" id="mainArea">
+
+    <div class="pg-head">
+      <div>
+        <div class="breadcrumb"><a href="/">Portal</a> › <a href="#">Controls</a> › Revenue Validation</div>
+        <div class="pg-title">Revenue Validation</div>
+        <div class="pg-sub">RAID ↔ Hive prepaid reconciliation · 12 components · parallel execution</div>
+      </div>
+      <span class="status-badge" id="statusBadge">IDLE</span>
+    </div>
+
+    <div id="sumArea" style="display:none">
+      <div class="section-title" style="margin-bottom:11px">Summary</div>
+      <div class="sum-grid" id="sumGrid"></div>
+    </div>
+
+    <div id="chartsArea" style="display:none">
+      <div class="section-title" style="margin-bottom:11px">Visualisations</div>
+      <div class="chart-grid">
+        <div class="chart-card"><div class="ct">Revenue by Component (PKR)</div><canvas id="revChart"></canvas></div>
+        <div class="chart-card"><div class="ct">Events by Component</div><canvas id="evtChart"></canvas></div>
+        <div class="chart-card"><div class="ct">Revenue Share by Group</div><canvas id="pieRev"></canvas></div>
+        <div class="chart-card"><div class="ct">Events Share by Group</div><canvas id="pieEvt"></canvas></div>
+        <div class="chart-card wide" id="compChartCard" style="display:none">
+          <div class="ct" id="compChartTitle">RAID VS HIVE — DAILY EVENTS</div>
+          <canvas id="compChart"></canvas>
+        </div>
+        <div class="chart-card" id="diffChartCard" style="display:none">
+          <div class="ct">EVENTS DIFFERENCE %</div>
+          <canvas id="diffChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div id="resultsArea" style="display:none">
+      <div class="results-card">
+        <div class="res-head">
+          <span class="res-title">Detailed Results</span>
+          <span id="runMeta" style="font-size:9px;color:var(--text2);margin-left:8px;font-family:'DM Mono',monospace"></span>
+        </div>
+        <div class="tabs-bar" id="tabsBar"></div>
+        <div id="tabsBody"></div>
+      </div>
+    </div>
+
+    <div class="empty" id="emptyState">
+      <div class="empty-icon">⚡</div>
+      <p>Pick a date range and source, select components, then click <strong>Run Validation</strong>.</p>
+    </div>
+
+  </main>
+</div>
+<div class="notif" id="notif"></div>
+{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const COMPONENTS = {{ components | tojson }};
+const GRP_COLORS = {{ group_colors | tojson }};
+let activeSrc = 'raid', charts = {}, currentResults = null;
+
+// Chart axis colours — readable on both themes
+const AXIS_COLOR = 'rgba(154,139,170,.7)';
+const GRID_COLOR = 'rgba(255,255,255,.04)';
+
+// ── Build sidebar component tree ──────────────────────────────────────────────
+(function () {
+  const groups = {};
+  for (const [k, v] of Object.entries(COMPONENTS))
+    (groups[v.group] = groups[v.group] || []).push({ k, ...v });
+
+  let html = '';
+  for (const [g, items] of Object.entries(groups)) {
+    const col = GRP_COLORS[g] || '#E11A3D';
+    html += `<div class="grp-label" style="--gc:${col}">${g}</div>`;
+    for (const it of items) {
+      html += `<div class="comp-item sel" id="ci_${it.k}" onclick="toggleItem('${it.k}',this)">
+        <input type="checkbox" id="chk_${it.k}" checked onclick="event.stopPropagation()"/>
+        <span class="ci-label">${it.label}</span>
+        <div class="ci-tags">
+          ${it.has_raid ? '<span class="tag tag-r">R</span>' : ''}
+          ${it.has_hive ? '<span class="tag tag-h">H</span>' : ''}
+        </div>
+      </div>`;
+    }
+  }
+  document.getElementById('compTree').innerHTML = html;
+}());
+
+function toggleItem(k, el) {
+  const chk = document.getElementById('chk_' + k);
+  chk.checked = !chk.checked;
+  el.classList.toggle('sel', chk.checked);
+}
+function selAll(v) {
+  for (const k of Object.keys(COMPONENTS)) {
+    document.getElementById('chk_' + k).checked = v;
+    document.getElementById('ci_' + k).classList.toggle('sel', v);
+  }
+}
+
+// ── Source toggle ──────────────────────────────────────────────────────────────
+function setSrc(src, btn) {
+  activeSrc = src;
+  document.querySelectorAll('.sp').forEach(b => b.className = 'sp');
+  btn.classList.add({ raid: 'ar', hive: 'ah', both: 'ab' }[src]);
+  const bd = document.getElementById('bothDates');
+  bd.classList.toggle('show', src === 'both');
+  if (src === 'both') {
+    const s = document.getElementById('gStart').value;
+    const e = document.getElementById('gEnd').value;
+    ['rStart', 'rEnd', 'hStart', 'hEnd'].forEach(id => {
+      if (!document.getElementById(id).value) {
+        document.getElementById('rStart').value = s;
+        document.getElementById('rEnd').value   = e;
+        document.getElementById('hStart').value = s;
+        document.getElementById('hEnd').value   = e;
+      }
+    });
+  }
+}
+
+// ── Run ────────────────────────────────────────────────────────────────────────
+async function runValidation() {
+  const selected = Object.keys(COMPONENTS).filter(k => document.getElementById('chk_' + k)?.checked);
+  if (!selected.length) { notify('Select at least one component', 'err'); return; }
+
+  const sd = document.getElementById('gStart').value.replace(/-/g, '');
+  const ed = document.getElementById('gEnd').value.replace(/-/g, '');
+  if (!sd || !ed) { notify('Select start and end date', 'err'); return; }
+
+  const body = {
+    components: selected,
+    source:     activeSrc,
+    start_date: sd,
+    end_date:   ed,
+    raid_start: activeSrc === 'both' ? document.getElementById('rStart').value.replace(/-/g, '') : sd,
+    raid_end:   activeSrc === 'both' ? document.getElementById('rEnd').value.replace(/-/g, '')   : ed,
+    hive_start: activeSrc === 'both' ? document.getElementById('hStart').value.replace(/-/g, '') : sd,
+    hive_end:   activeSrc === 'both' ? document.getElementById('hEnd').value.replace(/-/g, '')   : ed,
+  };
+
+  document.getElementById('runBtn').disabled = true;
+  const badge = document.getElementById('statusBadge');
+  badge.className = 'status-badge running';
+  badge.innerHTML = '<span class="pulse"></span>RUNNING';
+  document.getElementById('progBar').style.display   = 'block';
+  document.getElementById('progLabel').style.display = 'block';
+  document.getElementById('emptyState').style.display = 'none';
+
+  const resp = await fetch('/revenue-validation/api/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const { job_id, error } = await resp.json();
+  if (!resp.ok) { notify(error || 'Start failed', 'err'); resetUI(); return; }
+
+  // SSE progress stream
+  let jobDone = false;
+  const sse = new EventSource(`/revenue-validation/api/job/${job_id}/stream`);
+  sse.onmessage = e => {
+    const d = JSON.parse(e.data);
+    const pct = d.total > 0 ? Math.round(d.done / d.total * 100) : 0;
+    document.getElementById('progFill').style.width = pct + '%';
+    document.getElementById('progLabel').textContent = `${d.done} / ${d.total} components`;
+    if (d.status === 'done') { jobDone = true; sse.close(); loadResults(job_id); }
+  };
+  // onerror fires when server closes the connection after 'done' — guard with jobDone flag
+  sse.onerror = () => { if (jobDone) return; sse.close(); notify('Stream error — check console', 'err'); resetUI(); };
+}
+
+async function loadResults(job_id) {
+  const r = await fetch(`/revenue-validation/api/job/${job_id}`);
+  const job = await r.json();
+  currentResults = job.results || {};
+  const jobErrors = job.errors || {};
+
+  resetUI();
+  document.getElementById('runMeta').textContent =
+    `${Object.keys(currentResults).length} components · ${new Date().toLocaleTimeString()}`;
+
+  if (Object.keys(jobErrors).length) {
+    const msgs = Object.entries(jobErrors).map(([k, v]) => `${k}: ${v}`).join('\n');
+    console.error('Job-level errors:\n' + msgs);
+    notify(`${Object.keys(jobErrors).length} component(s) failed — see console (F12)`, 'err');
+  }
+
+  const sourceErrors = [];
+  for (const [, r] of Object.entries(currentResults)) {
+    if (r.errors && Object.keys(r.errors).length) {
+      for (const [src, msg] of Object.entries(r.errors)) {
+        sourceErrors.push(`${r.label} [${src.toUpperCase()}]: ${msg}`);
+        console.error(`${r.label} [${src}]:`, msg);
+      }
+    }
+  }
+  if (sourceErrors.length)
+    notify(`${sourceErrors.length} query error(s) — see console (F12)`, 'err');
+
+  if (!Object.keys(currentResults).length) {
+    notify('No results returned — check DB connections under Admin → Connections', 'err');
+    document.getElementById('emptyState').style.display = 'flex';
+    return;
+  }
+
+  renderSummary();
+  renderCharts();
+  renderTabs();
+  notify(`Done · ${Object.keys(currentResults).length} components`, 'ok');
+}
+
+function resetUI() {
+  document.getElementById('runBtn').disabled = false;
+  const badge = document.getElementById('statusBadge');
+  badge.className  = currentResults ? 'status-badge done' : 'status-badge';
+  badge.textContent = currentResults ? 'DONE' : 'IDLE';
+  document.getElementById('progBar').style.display   = 'none';
+  document.getElementById('progLabel').style.display = 'none';
+}
+
+// ── Summary ────────────────────────────────────────────────────────────────────
+function renderSummary() {
+  let total = 0, tEvt = 0;
+  const groups = {};
+  for (const r of Object.values(currentResults)) {
+    total += r.total_amount || 0;
+    tEvt  += r.total_events || 0;
+    const g = r.group;
+    groups[g] = groups[g] || { a: 0, e: 0 };
+    groups[g].a += r.total_amount || 0;
+    groups[g].e += r.total_events || 0;
+  }
+  let html = mkCard('Total Revenue', total, tEvt, '#E11A3D');
+  for (const [g, d] of Object.entries(groups))
+    html += mkCard(g, d.a, d.e, GRP_COLORS[g] || '#E11A3D');
+  document.getElementById('sumGrid').innerHTML = html;
+  document.getElementById('sumArea').style.display = 'block';
+}
+function mkCard(name, amt, evt, col) {
+  return `<div class="sum-card" style="--sc-c:${col}">
+    <div class="sc-name">${name}</div>
+    <div class="sc-val">${fmt(amt)}</div>
+    <div class="sc-evt">${fmtN(evt)} events</div>
+  </div>`;
+}
+
+// ── Charts ─────────────────────────────────────────────────────────────────────
+function renderCharts() {
+  const keys    = Object.keys(currentResults);
+  const labels  = keys.map(k => currentResults[k].label);
+  const amounts = keys.map(k => currentResults[k].total_amount || 0);
+  const events  = keys.map(k => currentResults[k].total_events || 0);
+  const colors  = keys.map(k => GRP_COLORS[currentResults[k].group] || '#E11A3D');
+
+  const baseOpts = fmtFn => ({
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ' ' + fmtFn(ctx.raw) } },
+    },
+    scales: {
+      x: { ticks: { color: AXIS_COLOR, font: { size: 8 }, maxRotation: 35 }, grid: { color: GRID_COLOR } },
+      y: { ticks: { color: AXIS_COLOR, font: { size: 8 } },                  grid: { color: GRID_COLOR } },
+    },
+  });
+
+  ['rev', 'evt', 'comp', 'diff', 'pieRev', 'pieEvt'].forEach(k => { if (charts[k]) charts[k].destroy() });
+
+  charts.rev = new Chart(document.getElementById('revChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: amounts, backgroundColor: colors, borderRadius: 4 }] },
+    options: baseOpts(fmt),
+  });
+  charts.evt = new Chart(document.getElementById('evtChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: events, backgroundColor: colors, borderRadius: 4 }] },
+    options: baseOpts(fmtN),
+  });
+
+  const grps = {}, grpE = {};
+  for (const r of Object.values(currentResults)) {
+    const g = r.group;
+    grps[g]  = (grps[g]  || 0) + (r.total_amount || 0);
+    grpE[g]  = (grpE[g]  || 0) + (r.total_events || 0);
+  }
+  const dnutOpts = fmtFn => ({
+    responsive: true, maintainAspectRatio: true,
+    plugins: {
+      legend: { position: 'right', labels: { color: AXIS_COLOR, font: { size: 9 } } },
+      tooltip: { callbacks: { label: ctx => ' ' + fmtFn(ctx.raw) } },
+    },
+  });
+  const mkCols = ks => ks.map(g => GRP_COLORS[g] || '#E11A3D');
+
+  charts.pieRev = new Chart(document.getElementById('pieRev'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(grps),
+      datasets: [{ data: Object.values(grps), backgroundColor: mkCols(Object.keys(grps)), borderColor: 'transparent', borderWidth: 2 }],
+    },
+    options: dnutOpts(fmt),
+  });
+  charts.pieEvt = new Chart(document.getElementById('pieEvt'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(grpE),
+      datasets: [{ data: Object.values(grpE), backgroundColor: mkCols(Object.keys(grpE)), borderColor: 'transparent', borderWidth: 2 }],
+    },
+    options: dnutOpts(fmtN),
+  });
+
+  const bothKey = Object.keys(currentResults).find(k => currentResults[k].comparison_rows?.length);
+  if (bothKey) {
+    renderCompChart(currentResults[bothKey]);
+    document.getElementById('compChartCard').style.display = 'block';
+    document.getElementById('diffChartCard').style.display = 'block';
+  }
+  document.getElementById('chartsArea').style.display = 'block';
+}
+
+function renderCompChart(r) {
+  const data = r.comparison_rows || [];
+  if (!data.length) return;
+  const byDate = {};
+  for (const row of data) {
+    const d = String(row.start_date || '');
+    byDate[d] = byDate[d] || { r: 0, h: 0, diff: 0 };
+    byDate[d].r    += row.total_events_raid    || 0;
+    byDate[d].h    += row.total_events_hive    || 0;
+    byDate[d].diff += row.total_events_diff_pct || 0;
+  }
+  const dates = Object.keys(byDate).sort();
+  document.getElementById('compChartTitle').textContent = `RAID VS HIVE — DAILY EVENTS · ${r.label}`;
+
+  charts.comp = new Chart(document.getElementById('compChart'), {
+    type: 'bar',
+    data: {
+      labels: dates,
+      datasets: [
+        { label: 'RAID', data: dates.map(d => byDate[d].r), backgroundColor: 'rgba(225,26,61,.45)',  borderRadius: 3 },
+        { label: 'Hive', data: dates.map(d => byDate[d].h), backgroundColor: 'rgba(167,139,250,.4)', borderRadius: 3 },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { labels: { color: AXIS_COLOR, font: { size: 9 } } } },
+      scales: {
+        x: { ticks: { color: AXIS_COLOR, font: { size: 8 }, maxRotation: 45 }, grid: { color: GRID_COLOR } },
+        y: { ticks: { color: AXIS_COLOR, font: { size: 8 } },                  grid: { color: GRID_COLOR } },
+      },
+    },
+  });
+
+  charts.diff = new Chart(document.getElementById('diffChart'), {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [{
+        label: 'Diff %',
+        data: dates.map(d => byDate[d].diff),
+        borderColor: '#F59E0B',
+        backgroundColor: 'rgba(245,158,11,.09)',
+        fill: true,
+        tension: .35,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { labels: { color: AXIS_COLOR, font: { size: 9 } } } },
+      scales: {
+        x: { ticks: { color: AXIS_COLOR, font: { size: 8 }, maxRotation: 45 }, grid: { color: GRID_COLOR } },
+        y: { ticks: { color: AXIS_COLOR, font: { size: 8 } },                  grid: { color: GRID_COLOR } },
+      },
+    },
+  });
+}
+
+// ── Tabs & tables ──────────────────────────────────────────────────────────────
+function renderTabs() {
+  const bar  = document.getElementById('tabsBar');
+  const body = document.getElementById('tabsBody');
+  bar.innerHTML = '';
+  body.innerHTML = '';
+  bar.innerHTML  += mkTab('_all', 'All Components', true);
+  body.innerHTML += `<div class="tab-panel active" id="tp__all">${buildAllTable()}</div>`;
+  for (const [k, r] of Object.entries(currentResults)) {
+    bar.innerHTML  += mkTab(k, r.label);
+    body.innerHTML += `<div class="tab-panel" id="tp_${k}">${buildCompPanel(r)}</div>`;
+  }
+  document.getElementById('resultsArea').style.display = 'block';
+  document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.t, b)));
+}
+function mkTab(id, label, active = false) {
+  return `<button class="tab ${active ? 'active' : ''}" data-t="${id}">${label}</button>`;
+}
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === btn));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tp_' + id));
+  if (id !== '_all' && currentResults[id]?.comparison_rows?.length) {
+    renderCompChart(currentResults[id]);
+    document.getElementById('compChartCard').style.display = 'block';
+    document.getElementById('diffChartCard').style.display = 'block';
+  } else {
+    document.getElementById('compChartCard').style.display = 'none';
+    document.getElementById('diffChartCard').style.display = 'none';
+  }
+}
+
+function buildAllTable() {
+  let rows = '', total = 0;
+  for (const r of Object.values(currentResults)) {
+    total += r.total_amount || 0;
+    rows  += `<tr><td>${r.group}</td><td>${r.label}</td><td>${fmtN(r.total_events)}</td><td>${fmt(r.total_amount)}</td></tr>`;
+  }
+  rows += `<tr style="border-top:2px solid var(--border2)">
+    <td colspan="2" style="color:var(--accent);font-weight:700">TOTAL</td>
+    <td></td>
+    <td style="color:var(--accent);font-weight:700">${fmt(total)}</td>
+  </tr>`;
+  return `<div class="tbl-wrap"><table>
+    <thead><tr><th>Group</th><th>Component</th><th>Events</th><th>Amount (PKR)</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function buildCompPanel(r) {
+  let out = '';
+
+  // ── Inline errors (Task 7) ─────────────────────────────────────────────────
+  if (r.errors && Object.keys(r.errors).length) {
+    for (const [src, msg] of Object.entries(r.errors)) {
+      out += `<div style="background:rgba(240,64,64,.08);border:1px solid rgba(240,64,64,.25);
+               border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:12px;font-size:10px;color:var(--danger)">
+        <strong style="text-transform:uppercase">${src} ERROR</strong><br/>
+        <span style="color:var(--text2);word-break:break-all;font-family:'DM Mono',monospace">${msg}</span>
+      </div>`;
+    }
+  }
+
+  if (r.comparison_rows?.length) {
+    out += `<div style="font-size:9px;color:var(--success);letter-spacing:.10em;margin-bottom:9px;font-weight:700;font-family:'DM Mono',monospace">RAID VS HIVE COMPARISON</div>`;
+    out += mkTable(r.comparison_rows, ['start_date','total_events_raid','total_events_hive','total_events_diff','total_events_diff_pct','total_amount_raid','total_amount_hive','preferred_source']);
+  } else {
+    if (r.raid_rows?.length) {
+      out += `<div style="font-size:9px;color:#E88FAA;letter-spacing:.10em;margin-bottom:8px;font-weight:700;font-family:'DM Mono',monospace">RAID</div>`;
+      out += mkTable(r.raid_rows, Object.keys(r.raid_rows[0]).filter(k => !k.startsWith('_')));
+    }
+    if (r.hive_rows?.length) {
+      out += `<div style="font-size:9px;color:#a78bfa;letter-spacing:.10em;margin-top:16px;margin-bottom:8px;font-weight:700;font-family:'DM Mono',monospace">HIVE</div>`;
+      out += mkTable(r.hive_rows, Object.keys(r.hive_rows[0]).filter(k => !k.startsWith('_')));
+    }
+  }
+
+  return out || '<p style="color:var(--text2);padding:10px">No data for this component.</p>';
+}
+
+function mkTable(rows, cols) {
+  if (!rows?.length) return '<p style="color:var(--text2)">No rows.</p>';
+  const ths = cols.map(c => `<th>${c.replace(/_/g, ' ')}</th>`).join('');
+  const trs = rows.map(row => {
+    const tds = cols.map(c => {
+      const v = row[c];
+      if (c === 'preferred_source')     return `<td class="src-${v}">${v || ''}</td>`;
+      if (c.includes('diff_pct'))       { const cl = v > 0 ? 'pos' : v < 0 ? 'neg' : 'zer'; return `<td class="${cl}">${typeof v === 'number' ? v.toFixed(2) + '%' : v}</td>`; }
+      if (c.includes('diff'))           { const cl = v > 0 ? 'pos' : v < 0 ? 'neg' : 'zer'; return `<td class="${cl}">${fmt(v)}</td>`; }
+      if (c.includes('amount'))         return `<td>${fmt(v)}</td>`;
+      if (c.includes('event'))          return `<td>${fmtN(v)}</td>`;
+      return `<td>${v ?? '—'}</td>`;
+    }).join('');
+    return `<tr>${tds}</tr>`;
+  }).join('');
+  return `<div class="tbl-wrap"><table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table></div>`;
+}
+
+// ── Utils ──────────────────────────────────────────────────────────────────────
+function fmt(n)  { return typeof n === 'number' ? n.toLocaleString('en', { maximumFractionDigits: 0 }) : (n ?? '—') }
+function fmtN(n) { return typeof n === 'number' ? n.toLocaleString() : (n ?? '—') }
+function notify(msg, type) {
+  const el = document.getElementById('notif');
+  el.className = `notif notif-${type}`;
+  el.innerHTML = (type === 'ok' ? '✓ ' : '⚠ ') + msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 4200);
+}
+</script>
+{% endblock %}

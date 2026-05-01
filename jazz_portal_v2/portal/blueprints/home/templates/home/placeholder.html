@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ module }} — Jazz BA Portal{% endblock %}
+{% block head_styles %}
+.ph-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:60px 40px}
+.ph-box{text-align:center;max-width:440px;display:flex;flex-direction:column;align-items:center;gap:18px}
+.ph-icon{font-size:52px;filter:grayscale(1);opacity:.3}
+.ph-tag{font-size:8px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--accent);background:rgba(0,201,245,.07);
+  border:1px solid rgba(0,201,245,.18);padding:3px 11px;border-radius:3px}
+.ph-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800}
+.ph-desc{font-size:11px;color:var(--muted);line-height:1.75}
+.ph-back{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;
+  border-radius:6px;text-decoration:none;border:1px solid var(--border2);
+  color:var(--muted);font-size:11px;transition:all .15s;margin-top:6px}
+.ph-back:hover{border-color:var(--accent);color:var(--accent)}
+{% endblock %}
+{% block content %}
+<div class="ph-wrap">
+  <div class="ph-box">
+    <div class="ph-icon">{{ icon }}</div>
+    <span class="ph-tag">Under Development</span>
+    <h1 class="ph-title">{{ module }}</h1>
+    <p class="ph-desc">{{ description }}</p>
+    <a href="/" class="ph-back">← Back to Portal</a>
+  </div>
+</div>
+{% endblock %}

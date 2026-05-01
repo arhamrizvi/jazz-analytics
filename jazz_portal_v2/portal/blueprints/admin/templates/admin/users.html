@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Admin Users — Jazz BA Portal{% endblock %}
+{% set active_section='admin' %}{% set active_page='users' %}
+{% block head_styles %}
+.admin-wrap{padding:24px 32px;display:flex;flex-direction:column;gap:18px;max-width:860px;margin:0 auto;width:100%}
+.pg-head{display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.pg-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800}
+.admin-nav{display:flex;gap:5px;margin-left:auto}
+.an{padding:5px 12px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:10px;text-decoration:none;transition:all .13s;font-family:'DM Mono',monospace}
+.an:hover,.an.active{border-color:var(--accent);color:var(--accent);background:rgba(0,201,245,.07)}
+.two-col{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.card-head{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,rgba(0,201,245,.04),transparent)}
+.card-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:rgba(255,255,255,.02);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:8px;padding:8px 13px;text-align:left;border-bottom:1px solid var(--border);font-weight:500}
+td{padding:9px 13px;border-bottom:1px solid rgba(255,255,255,.03)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.you{font-size:8px;padding:2px 5px;border-radius:3px;background:rgba(0,201,245,.09);color:var(--accent);margin-left:6px}
+.del-btn{font-size:9px;padding:3px 9px;border-radius:3px;border:1px solid rgba(240,64,64,.28);color:var(--danger);background:transparent;cursor:pointer;font-family:'DM Mono',monospace;transition:all .13s}
+.del-btn:hover{background:rgba(240,64,64,.09)}
+.del-btn:disabled{opacity:.3;cursor:not-allowed}
+.add-form{padding:16px;display:flex;flex-direction:column;gap:11px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.field input{background:#080e16;border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:7px 9px;font-family:'DM Mono',monospace;font-size:11px;outline:none;transition:border-color .18s;width:100%}
+.field input:focus{border-color:var(--accent)}
+.add-btn{padding:9px;background:linear-gradient(135deg,rgba(0,201,245,.1),rgba(108,63,255,.1));border:1px solid var(--accent);border-radius:5px;color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:.08em;cursor:pointer;transition:all .18s}
+.add-btn:hover{box-shadow:0 0 12px rgba(0,201,245,.18)}
+.warn{background:rgba(245,166,35,.05);border:1px solid rgba(245,166,35,.22);border-radius:5px;padding:11px 13px;font-size:10px;color:var(--warn);line-height:1.65;margin-top:4px}
+{% endblock %}
+{% block content %}
+<div class="admin-wrap">
+  <div class="pg-head">
+    <div><div class="pg-title">Admin Users</div></div>
+    <div class="admin-nav">
+      <a href="/admin/queries"     class="an">Queries</a>
+      <a href="/admin/connections" class="an">Connections</a>
+      <a href="/admin/audit"       class="an">Audit Log</a>
+      <a href="/admin/users"       class="an active">Users</a>
+      <a href="/admin/logout"      class="an">Sign Out ({{ admin }})</a>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-head"><span class="card-title">Current Admin Users</span></div>
+      <table><thead><tr><th>Username</th><th>Added</th><th></th></tr></thead>
+      <tbody>
+      {% for u in users %}
+      <tr>
+        <td><strong>{{ u.username }}</strong>{% if u.username==admin %}<span class="you">you</span>{% endif %}</td>
+        <td style="font-size:9px;color:var(--muted)">{{ u.created_at[:10] }}</td>
+        <td>
+          <form method="POST" action="/admin/users/delete" style="display:inline" onsubmit="return confirm('Remove {{ u.username }}?')">
+            <input type="hidden" name="username" value="{{ u.username }}"/>
+            <button class="del-btn" {% if u.username==admin %}disabled title="Cannot delete yourself"{% endif %}>Remove</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody></table>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">Add Admin User</span></div>
+        <form class="add-form" method="POST" action="/admin/users/add">
+          <div class="field"><label>Username</label><input type="text" name="username" required autocomplete="off"/></div>
+          <div class="field"><label>Password</label><input type="password" name="password" required autocomplete="new-password"/></div>
+          <button type="submit" class="add-btn">ADD USER →</button>
+        </form>
+      </div>
+      <div class="warn" style="margin-top:12px">⚠ Passwords are stored as SHA-256 hashes. For production, consider bcrypt or your organisation's SSO.</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

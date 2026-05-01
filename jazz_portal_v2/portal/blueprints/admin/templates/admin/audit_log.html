@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Audit Log — Jazz BA Portal{% endblock %}
+{% set active_section='admin' %}{% set active_page='audit' %}
+{% block head_styles %}
+.admin-wrap{padding:24px 32px;display:flex;flex-direction:column;gap:18px;max-width:1100px;margin:0 auto;width:100%}
+.pg-head{display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.pg-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800}
+.admin-nav{display:flex;gap:5px;margin-left:auto}
+.an{padding:5px 12px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:10px;text-decoration:none;transition:all .13s;font-family:'DM Mono',monospace}
+.an:hover,.an.active{border-color:var(--accent);color:var(--accent);background:rgba(0,201,245,.07)}
+.filter-row{display:flex;gap:10px;align-items:center}
+.filter-row input{background:#080e16;border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:7px 9px;font-family:'DM Mono',monospace;font-size:11px;outline:none;transition:border-color .18s;width:240px}
+.filter-row input:focus{border-color:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:rgba(255,255,255,.02);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:8px;padding:8px 13px;text-align:left;border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap}
+td{padding:8px 13px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:top}
+tr:hover td{background:rgba(255,255,255,.02)}
+.hidden-row{display:none}
+.badge-src{font-size:8px;padding:2px 6px;border-radius:3px;font-weight:500}
+.badge-raid{background:rgba(0,201,245,.09);color:#00c9f5;border:1px solid rgba(0,201,245,.2)}
+.badge-hive{background:rgba(167,139,250,.09);color:#a78bfa;border:1px solid rgba(167,139,250,.2)}
+.comp-link{color:var(--accent);text-decoration:none;font-size:10px}
+.comp-link:hover{text-decoration:underline}
+.sql-snip{font-size:9px;color:var(--muted2);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+{% endblock %}
+{% block content %}
+<div class="admin-wrap">
+  <div class="pg-head">
+    <div><div class="pg-title">Audit Log</div></div>
+    <div class="admin-nav">
+      <a href="/admin/queries"     class="an">Queries</a>
+      <a href="/admin/connections" class="an">Connections</a>
+      <a href="/admin/audit"       class="an active">Audit Log</a>
+      <a href="/admin/users"       class="an">Users</a>
+      <a href="/admin/logout"      class="an">Sign Out ({{ admin }})</a>
+    </div>
+  </div>
+  <div class="filter-row">
+    <input type="text" id="fi" placeholder="Filter by user, component, note…" oninput="filterLog()"/>
+    <span style="font-size:9px;color:var(--muted)" id="fc">{{ log|length }} entries</span>
+  </div>
+  <div class="card">
+    <table>
+      <thead><tr><th>#</th><th>When (UTC)</th><th>By</th><th>Component</th><th>Source</th><th>Note</th><th>Old SQL</th><th></th></tr></thead>
+      <tbody id="logBody">
+        {% if not log %}<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:32px">No audit entries yet.</td></tr>{% endif %}
+        {% for e in log %}
+        <tr data-s="{{ (e.changed_by~' '~e.component_key~' '~e.label~' '~(e.note or ''))|lower }}">
+          <td style="color:var(--muted2);font-size:9px">{{ e.id }}</td>
+          <td style="font-size:9px;color:var(--muted)">{{ e.changed_at[:16]|replace('T',' ') }}</td>
+          <td style="font-weight:600">{{ e.changed_by }}</td>
+          <td><a href="/admin/queries/{{ e.query_id }}" class="comp-link">{{ e.label }}</a></td>
+          <td><span class="badge-src badge-{{ e.source }}">{{ e.source|upper }}</span></td>
+          <td style="font-size:9px;color:var(--muted)">{{ e.note or '—' }}</td>
+          <td><span class="sql-snip">{{ e.old_sql[:100] }}{% if e.old_sql|length>100 %}…{% endif %}</span></td>
+          <td><a href="/admin/queries/{{ e.query_id }}" style="font-size:9px;color:var(--muted);text-decoration:none">→</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<script>
+function filterLog(){
+  const q=document.getElementById('fi').value.toLowerCase();
+  const rows=document.querySelectorAll('#logBody tr[data-s]');
+  let v=0;
+  rows.forEach(r=>{const m=!q||r.dataset.s.includes(q);r.classList.toggle('hidden-row',!m);if(m)v++;});
+  document.getElementById('fc').textContent=v+' entries';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+portal.db
+portal.db-shm
+portal.db-wal
+.env
+*.egg-info/
+dist/
+build/
+.DS_Store
