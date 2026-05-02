@@ -8,11 +8,26 @@ To change a connection: Admin → Connections → Edit → Save.
 Takes effect on the next run. No restart needed.
 """
 
+import socket
 from portal import db
+
+# TCP probe timeout in seconds — fail fast if server is unreachable
+_TCP_TIMEOUT = 8
 
 
 class PortalConnectionError(Exception):
     pass
+
+
+def _tcp_probe(host: str, port: int) -> None:
+    """Raise PortalConnectionError fast if the host:port is not reachable."""
+    try:
+        s = socket.create_connection((host, port), timeout=_TCP_TIMEOUT)
+        s.close()
+    except OSError as exc:
+        raise PortalConnectionError(
+            f"Cannot reach {host}:{port} (network/VPN issue?) — {exc}"
+        )
 
 
 def get_oracle(conn_key: str = "raid"):
@@ -21,11 +36,12 @@ def get_oracle(conn_key: str = "raid"):
         raise PortalConnectionError(
             f"No active connection '{conn_key}'. Configure it under Admin → Connections."
         )
+    _tcp_probe(row["host"], int(row["port"]))
     try:
         import oracledb
         dsn = oracledb.makedsn(row["host"], int(row["port"]), service_name=row["database"])
         c = oracledb.connect(user=row["username"], password=row["password"], dsn=dsn)
-        c.callTimeout = 600_000  # 600 s; raises DPY-4011 instead of hanging forever
+        c.callTimeout = 900_000  # 15 min per query call
         c.module = "jazz_portal_rv"
         return c
     except ImportError:
@@ -42,6 +58,7 @@ def get_hive(conn_key: str = "hive"):
         raise PortalConnectionError(
             f"No active connection '{conn_key}'. Configure it under Admin → Connections."
         )
+    _tcp_probe(row["host"], int(row["port"]))
     try:
         from pyhive import hive
         conn = hive.Connection(

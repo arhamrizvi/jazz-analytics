@@ -100,6 +100,19 @@ CREATE TABLE IF NOT EXISTS query_audit (
 
 CREATE INDEX IF NOT EXISTS idx_q_audit_qid  ON query_audit(query_id);
 CREATE INDEX IF NOT EXISTS idx_ca_conn_id   ON connection_audit(conn_id);
+
+CREATE TABLE IF NOT EXISTS run_cache (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_at        TEXT    NOT NULL,
+    run_by        TEXT    NOT NULL DEFAULT 'anonymous',
+    start_date    TEXT    NOT NULL,
+    end_date      TEXT    NOT NULL,
+    source        TEXT    NOT NULL,
+    component_key TEXT    NOT NULL,
+    result_json   TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_rc_lookup
+    ON run_cache(start_date, end_date, source, component_key, run_at);
 """
 
 
@@ -440,7 +453,7 @@ FROM (
     FROM   raid_jazz.pre_out_sdp_erc_cdr_prd
     WHERE  event_type = 'timeBasedActions'
       AND  subscriber_type = 'PRE'
-      AND  start_date BETWEEN '{start_date}' AND '{end_date}'
+      AND  start_date BETWEEN '{start_date_raw}' AND '{end_date_raw}'
 ) A
 GROUP BY start_date
 ORDER BY start_date"""),
@@ -507,47 +520,47 @@ ORDER BY 1"""),
         # ── Non-Usage: VAS RBT (Hive only) ────────────────────────────────
         ("nonusage_vas_rbt", "hive", "Non-Usage VAS RBT — Hive", r"""\
 SELECT start_date,
-       sum(cdr_count)              AS total_events,
-       sum(charge_amount) / 1.195  AS total_amount
+       SUM(cdr_count)              AS total_events,
+       SUM(charge_amount) / 1.195  AS total_amount
 FROM (
     SELECT start_date,
-           split(exploded_column, '\\|')[0]  AS name,
-           count(event_type)                  AS cdr_count,
-           CAST(SUM(
-               CAST(split(exploded_column,'\\|')[1] AS INT) /
-               CAST(RPAD(1, CAST(split(exploded_column,'\\|')[2] AS INT)+1, 0) AS INT)
-           ) AS FLOAT) AS charge_amount
+           COUNT(event_type) AS cdr_count,
+           SUM(
+               CAST(split(exploded_column, '\\|')[1] AS DOUBLE) /
+               POWER(10, CAST(split(exploded_column, '\\|')[2] AS INT))
+           ) AS charge_amount
     FROM   raid_jazz.pre_out_sdp_erc_cdr_prd
-    LATERAL VIEW posexplode(split(raid_description,'\\|\\|')) exploded AS record, exploded_column
-    WHERE  start_date BETWEEN '{start_date}' AND '{end_date}'
+    LATERAL VIEW explode(split(raid_description, '\\|\\|')) exploded AS exploded_column
+    WHERE  start_date BETWEEN '{start_date_raw}' AND '{end_date_raw}'
       AND  event_type = 'periodicAccountMgmt'
       AND  service_class NOT IN (
              '52','62','65','70','72','73','88','90',
              '101','102','103','106','107','108')
-      AND  lower(exploded_column) LIKE '%amount_%'
-      AND  lower(exploded_column) LIKE '%rbt%'
+      AND  LOWER(exploded_column) LIKE '%amount_%'
+      AND  LOWER(exploded_column) LIKE '%rbt%'
     GROUP BY start_date, exploded_column
 ) b
-WHERE charge_amount != 0 AND charge_amount IS NOT NULL
+WHERE charge_amount != 0
 GROUP BY start_date
 ORDER BY start_date"""),
 
         # ── Non-Usage: VAS VIC (Hive only) ────────────────────────────────
         ("nonusage_vas_vic", "hive", "Non-Usage VAS VIC — Hive", r"""\
-SELECT start_date,
-       sum(cdr_count)              AS total_events,
-       SUM(charge_amount) / 1.195  AS total_amount
+SELECT
+    start_date,
+    SUM(cdr_count)              AS total_events,
+    SUM(charge_amount) / 1.195  AS total_amount
 FROM (
-    SELECT start_date,
-           split(exploded_column, '\\|')[0]  AS name,
-           count(event_type)                  AS cdr_count,
-           CAST(SUM(
-               CAST(split(exploded_column,'\\|')[1] AS INT) /
-               CAST(RPAD(1, CAST(split(exploded_column,'\\|')[2] AS INT)+1, 0) AS INT)
-           ) AS FLOAT) AS charge_amount
+    SELECT
+        start_date,
+        COUNT(event_type) AS cdr_count,
+        SUM(
+            CAST(split(exploded_column, '\\|')[1] AS DOUBLE) /
+            POWER(10, CAST(split(exploded_column, '\\|')[2] AS INT))
+        ) AS charge_amount
     FROM   raid_jazz.pre_out_sdp_erc_cdr_prd
-    LATERAL VIEW posexplode(split(raid_description,'\\|\\|')) exploded AS record, exploded_column
-    WHERE  start_date BETWEEN '{start_date}' AND '{end_date}'
+    LATERAL VIEW explode(split(raid_description, '\\|\\|')) exploded AS exploded_column
+    WHERE  start_date BETWEEN '{start_date_raw}' AND '{end_date_raw}'
       AND  event_type = 'periodicAccountMgmt'
       AND  service_class NOT IN (
              '52','62','65','70','72','73','88','90',
@@ -557,7 +570,7 @@ FROM (
       AND  LOWER(exploded_column) NOT LIKE '%tax%'
     GROUP BY start_date, exploded_column
 ) b
-WHERE charge_amount != 0 AND charge_amount IS NOT NULL
+WHERE  charge_amount > 0
 GROUP BY start_date
 ORDER BY start_date"""),
 
@@ -637,3 +650,67 @@ ORDER BY f_start_date"""),
                     "INSERT INTO queries (component_key,source,label,query_sql,updated_at,updated_by) VALUES (?,?,?,?,?,?)",
                     (comp_key, source, label, sql.strip(), _now(), "system")
                 )
+
+
+# ── Run cache ──────────────────────────────────────────────────────────────
+
+def save_run_results(run_at: str, run_by: str,
+                     start_date: str, end_date: str,
+                     source: str, results: dict):
+    """Persist all component results from a completed job to run_cache."""
+    with get_conn() as c:
+        for comp_key, result in results.items():
+            # Strip internal per-row timing columns before storing
+            cleaned = {}
+            for k, v in result.items():
+                if k in ("raid_rows", "hive_rows", "comparison_rows") and isinstance(v, list):
+                    cleaned[k] = [{col: val for col, val in row.items()
+                                   if not col.startswith("_")}
+                                  for row in v]
+                else:
+                    cleaned[k] = v
+            c.execute(
+                """INSERT INTO run_cache
+                   (run_at, run_by, start_date, end_date, source, component_key, result_json)
+                   VALUES (?,?,?,?,?,?,?)""",
+                (run_at, run_by, start_date, end_date, source,
+                 comp_key, json.dumps(cleaned))
+            )
+
+
+def get_last_run(start_date: str, end_date: str, source: str) -> dict | None:
+    """Return {run_at, run_by, results: {comp_key: result}} for the latest matching run."""
+    with get_conn() as c:
+        meta = c.execute(
+            """SELECT run_at, run_by FROM run_cache
+               WHERE start_date=? AND end_date=? AND source=?
+               ORDER BY run_at DESC LIMIT 1""",
+            (start_date, end_date, source)
+        ).fetchone()
+        if not meta:
+            return None
+        run_at, run_by = meta["run_at"], meta["run_by"]
+        rows = c.execute(
+            """SELECT component_key, result_json FROM run_cache
+               WHERE start_date=? AND end_date=? AND source=? AND run_at=?""",
+            (start_date, end_date, source, run_at)
+        ).fetchall()
+    return {
+        "run_at":  run_at,
+        "run_by":  run_by,
+        "results": {r["component_key"]: json.loads(r["result_json"]) for r in rows},
+    }
+
+
+def list_recent_runs(limit: int = 15) -> list[dict]:
+    """List the most recent distinct run sessions (one row per job)."""
+    with get_conn() as c:
+        rows = c.execute(
+            """SELECT run_at, run_by, start_date, end_date, source,
+                      COUNT(*) AS n_components
+               FROM run_cache
+               GROUP BY run_at, run_by, start_date, end_date, source
+               ORDER BY run_at DESC LIMIT ?""",
+            (limit,)
+        ).fetchall()
+    return [dict(r) for r in rows]

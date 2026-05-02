@@ -64,15 +64,26 @@ def _run_query(sql: str, source: str, start_date: str, end_date: str) -> pd.Data
     if source == "raid":
         oracle_sd = _to_oracle_date(start_date)
         oracle_ed = _to_oracle_date(end_date)
+        # Render dates as literals so Oracle picks the right execution plan for the actual date range.
+        # RAID queries use :start_date / :end_date placeholders — replace them here.
+        rendered = (sql
+                    .replace(":start_date", f"'{oracle_sd}'")
+                    .replace(":end_date",   f"'{oracle_ed}'"))
         conn = conn_mgr.get_oracle()
         try:
-            df = pd.read_sql(sql, conn, params={"start_date": oracle_sd, "end_date": oracle_ed})
+            df = pd.read_sql(rendered, conn)
         finally:
             conn.close()
     else:
-        hive_sd = _to_hive_date(start_date)
-        hive_ed = _to_hive_date(end_date)
-        rendered = sql.replace("{start_date}", hive_sd).replace("{end_date}", hive_ed)
+        hive_sd  = _to_hive_date(start_date)
+        hive_ed  = _to_hive_date(end_date)
+        raw_sd   = _to_oracle_date(start_date)   # YYYYMMDD — for tables that store dates without dashes
+        raw_ed   = _to_oracle_date(end_date)
+        rendered = (sql
+                    .replace("{start_date}", hive_sd)
+                    .replace("{end_date}",   hive_ed)
+                    .replace("{start_date_raw}", raw_sd)
+                    .replace("{end_date_raw}",   raw_ed))
         conn = conn_mgr.get_hive()
         try:
             df = pd.read_sql(rendered, conn)
@@ -158,21 +169,41 @@ def _run_component(comp_key: str, source: str,
         except Exception as exc:
             result["errors"]["hive"] = str(exc)
 
-    # ── Comparison (both sources) ─────────────────────────────────────────
+    # ── Totals — use whichever data is available ──────────────────────────
     if source == "both" and df_raid is not None and df_hive is not None:
-        comp_df = _compare(df_raid, df_hive, meta.indexes)
-        result["comparison_rows"]  = comp_df.to_dict("records")
-        result["total_events"]     = int(result.get("raid_total_events", 0))
-        result["total_amount"]     = float(comp_df["total_amount"].sum()) if "total_amount" in comp_df.columns else 0.0
-    elif source == "raid" and df_raid is not None:
+        try:
+            comp_df = _compare(df_raid, df_hive, meta.indexes)
+            result["comparison_rows"] = comp_df.to_dict("records")
+            result["total_events"]    = int(result.get("raid_total_events", 0))
+            result["total_amount"]    = float(comp_df["total_amount"].sum()) if "total_amount" in comp_df.columns else 0.0
+            result["source_used"]     = "both"
+        except Exception as exc:
+            result["errors"]["compare"] = str(exc)
+            result["total_events"] = result.get("raid_total_events", 0)
+            result["total_amount"] = result.get("raid_total_amount", 0.0)
+            result["source_used"]  = "raid"
+    elif df_raid is not None:
+        # covers: source="raid", or source="both" but hive query missing / errored
         result["total_events"] = result.get("raid_total_events", 0)
         result["total_amount"] = result.get("raid_total_amount", 0.0)
-    elif source == "hive" and df_hive is not None:
+        result["source_used"]  = "raid"
+    elif df_hive is not None:
+        # covers: source="hive", or source="both" but raid query missing / errored
         result["total_events"] = result.get("hive_total_events", 0)
         result["total_amount"] = result.get("hive_total_amount", 0.0)
+        result["source_used"]  = "hive"
     else:
         result["total_events"] = 0
         result["total_amount"] = 0.0
+        result["source_used"]  = None
+        # flag which source(s) have no registered query for this component
+        missing = []
+        if source in ("raid", "both") and not raid_sql:
+            missing.append("raid")
+        if source in ("hive", "both") and not hive_sql:
+            missing.append("hive")
+        if missing:
+            result["no_query"] = missing
 
     return result
 
@@ -182,7 +213,8 @@ def _run_component(comp_key: str, source: str,
 def build_job(components: list[str], source: str,
               start_date: str, end_date: str,
               raid_start: str, raid_end: str,
-              hive_start: str, hive_end: str) -> str:
+              hive_start: str, hive_end: str,
+              run_by: str = "anonymous") -> str:
     job_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
     with _jobs_lock:
         _jobs[job_id] = {
@@ -195,6 +227,7 @@ def build_job(components: list[str], source: str,
                 "source":     source,
                 "start_date": start_date,
                 "end_date":   end_date,
+                "run_by":     run_by,
             },
         }
     return job_id
@@ -204,7 +237,8 @@ def run_validation(job_id: str, components: list[str], source: str,
                    start_date: str, end_date: str,
                    raid_start: str, raid_end: str,
                    hive_start: str, hive_end: str,
-                   max_workers: int = 6):
+                   max_workers: int = 6,
+                   run_by: str = "anonymous"):
     """Runs in a background thread. Mutates the job dict in _jobs."""
 
     def _mark(key, value):
@@ -230,10 +264,24 @@ def run_validation(job_id: str, components: list[str], source: str,
             try:
                 key, res = fut.result()
                 results[key] = res
+                with _jobs_lock:
+                    _jobs[job_id]["results"][key] = res   # stream immediately
             except Exception as exc:
                 errors[k] = str(exc)
+                with _jobs_lock:
+                    _jobs[job_id]["errors"][k] = str(exc)
             with _jobs_lock:
                 _jobs[job_id]["done"] += 1
 
     with _jobs_lock:
-        _jobs[job_id].update(status="done", results=results, errors=errors)
+        _jobs[job_id]["status"] = "done"
+
+    if results:
+        try:
+            db.save_run_results(
+                run_at=job_id, run_by=run_by,
+                start_date=start_date, end_date=end_date,
+                source=source, results=results,
+            )
+        except Exception:
+            pass  # cache failure must never break the main run

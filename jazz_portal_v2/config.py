@@ -7,6 +7,7 @@ BASE_DIR = Path(__file__).parent
 class Config:
     # Flask
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-in-production")
+    TEMPLATES_AUTO_RELOAD = True  # always read templates from disk; no stale cache on edits
 
     # SQLite store — queries, connections, audit log, admin users
     DB_PATH = Path(os.getenv("PORTAL_DB", str(BASE_DIR / "portal.db")))

@@ -4,388 +4,463 @@
 {% set active_page = 'rv' %}
 
 {% block head_styles %}
-/* ── PAGE LAYOUT ── */
-.rv-page { display: grid; grid-template-columns: 272px 1fr; flex: 1; min-height: 0 }
-.sidebar {
-  border-right: 1px solid var(--border);
-  background: var(--surface);
-  display: flex;
-  flex-direction: column;
+/* ── PAGE LAYOUT ────────────────────────────────────────────────── */
+.rv-page { display: grid; grid-template-columns: 268px 1fr; flex: 1; min-height: 0 }
+
+/* ── SIDEBAR ────────────────────────────────────────────────────── */
+.side {
+  border-right: 1px solid var(--line);
+  background: var(--bg-2);
+  display: flex; flex-direction: column;
   overflow-y: auto;
   height: calc(100vh - var(--nav-h));
-  position: sticky;
-  top: var(--nav-h);
-  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  position: sticky; top: var(--nav-h);
 }
-.sb-sec { padding: 14px 13px; border-bottom: 1px solid var(--border) }
-.sb-label {
-  font-size: 8px;
-  font-weight: 600;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: var(--text3);
-  margin-bottom: 10px;
-  font-family: 'DM Mono', monospace;
+.side__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 15px 14px 11px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
 }
-.main {
-  padding: 22px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  overflow-y: auto;
-  background: var(--bg);
-  transition: background var(--dur) var(--ease);
+.side__title { font-size: 12px; font-weight: 600; color: var(--ink); letter-spacing: -.01em }
+.side__reset {
+  background: none; border: none; color: var(--ink-3);
+  font-size: 11px; cursor: pointer; padding: 2px 7px;
+  border-radius: 4px; font-family: inherit;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.side__reset:hover { color: var(--ink); background: var(--line) }
+.side__section {
+  padding: 13px 14px; border-bottom: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 9px; flex-shrink: 0;
+}
+.side__section.grow { flex: 1; overflow-y: auto; flex-shrink: 1 }
+.side__legend {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 10.5px; font-weight: 500; color: var(--ink-2);
+}
+.side__legend-tag {
+  font-family: 'Geist Mono', monospace; font-size: 9px;
+  color: var(--ink-3); background: var(--line);
+  padding: 1px 6px; border-radius: 4px;
 }
 
-/* ── FORM CONTROLS ── */
-.date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 7px }
-.field    { display: flex; flex-direction: column; gap: 4px }
-.field label {
-  font-size: 8px;
-  color: var(--text2);
-  letter-spacing: .10em;
-  text-transform: uppercase;
-  font-family: 'DM Mono', monospace;
+/* ── DATE FIELDS ────────────────────────────────────────────────── */
+.range-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px }
+.field { display: flex; flex-direction: column; gap: 4px }
+.field__label {
+  font-size: 9px; color: var(--ink-3); letter-spacing: .08em;
+  text-transform: uppercase; font-family: 'Geist Mono', monospace;
 }
+.field__control {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg-3); border: 1px solid var(--line);
+  border-radius: 6px; padding: 0 8px; height: 30px;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  position: relative;
+}
+.field__control:focus-within {
+  border-color: var(--jazz-red);
+  box-shadow: 0 0 0 2px rgba(225,26,61,.10);
+}
+.field__control svg {
+  width: 12px; height: 12px; color: var(--ink-3);
+  fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round;
+  flex-shrink: 0; pointer-events: none;
+}
+.field__control input[type=date],
+.field__control input[type=text] {
+  background: transparent; border: none; color: var(--ink);
+  font-size: 10.5px; font-family: 'Geist Mono', monospace;
+  outline: none; flex: 1; min-width: 0; color-scheme: dark;
+}
+[data-theme="light"] .field__control input[type=date] { color-scheme: light }
+.field__control input[type=date]::-webkit-calendar-picker-indicator {
+  opacity: 0; position: absolute; inset: 0; width: 100%; height: 100%;
+  cursor: pointer;
+}
+/* also support standalone date inputs (both-dates section) */
 input[type=date], select {
-  width: 100%;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  padding: 7px 8px;
-  font-family: 'DM Mono', monospace;
-  font-size: 11px;
-  outline: none;
-  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  width: 100%; background: var(--bg-3); border: 1px solid var(--line);
+  border-radius: 6px; color: var(--ink); padding: 6px 8px;
+  font-family: 'Geist Mono', monospace; font-size: 10.5px;
+  outline: none; color-scheme: dark;
+  transition: border-color var(--dur) var(--ease);
 }
+[data-theme="light"] input[type=date] { color-scheme: light }
 input[type=date]:focus, select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-dim);
+  border-color: var(--jazz-red); box-shadow: 0 0 0 2px rgba(225,26,61,.10);
 }
-input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.4) }
 
-/* ── SOURCE PILLS ── */
-.src-pills { display: flex; gap: 5px }
-.sp {
-  flex: 1;
-  padding: 6px 0;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border2);
-  background: transparent;
-  color: var(--text2);
-  cursor: pointer;
-  font-family: 'DM Mono', monospace;
-  font-size: 10px;
-  text-align: center;
+/* ── PRESET BUTTONS ─────────────────────────────────────────────── */
+.preset-row { display: flex; gap: 4px }
+.preset {
+  flex: 1; padding: 5px 0;
+  background: var(--bg-3); border: 1px solid var(--line);
+  border-radius: 5px; color: var(--ink-3);
+  font-size: 10px; font-family: 'Geist Mono', monospace;
+  cursor: pointer; text-align: center;
   transition: all var(--dur) var(--ease);
 }
-.sp:hover { border-color: var(--accent); color: var(--text) }
-/* Active states per source */
-.sp.ar { background: var(--accent-dim); border-color: var(--accent); color: var(--accent) }
-.sp.ah { background: rgba(138,23,69,.14); border-color: #C2547A; color: #E88FAA }
-.sp.ab { background: rgba(0,200,122,.09); border-color: #00C87A; color: #00C87A }
+.preset:hover { border-color: var(--line-2); color: var(--ink) }
+.preset.is-active { background: var(--bg-4); border-color: var(--line-2); color: var(--ink) }
 
-.both-dates { display: none; margin-top: 10px; grid-template-columns: 1fr 1fr; gap: 7px }
-.both-dates.show { display: grid }
+/* ── SEGMENTED SOURCE TOGGLE ─────────────────────────────────────── */
+.seg {
+  position: relative; display: flex;
+  background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; padding: 3px;
+}
+.seg__indicator {
+  position: absolute; top: 3px; bottom: 3px; left: 3px;
+  border-radius: 5px; background: var(--bg-4); border: 1px solid var(--line-2);
+  transition: transform 200ms cubic-bezier(.4,0,.2,1), width 200ms;
+  pointer-events: none; z-index: 0;
+}
+.seg__btn {
+  flex: 1; padding: 5px 0; border: none; background: transparent;
+  color: var(--ink-3); cursor: pointer;
+  font-size: 10.5px; font-weight: 500;
+  font-family: 'Geist Mono', monospace; letter-spacing: .04em;
+  position: relative; z-index: 1; border-radius: 5px;
+  transition: color 200ms;
+}
+.seg__btn.is-active { color: var(--ink) }
+.src-hint {
+  font-size: 10px; color: var(--ink-3); line-height: 1.5;
+  min-height: 15px;
+}
+
+/* ── BOTH-SOURCE DATE ROWS ──────────────────────────────────────── */
+.both-dates { display: none; flex-direction: column; gap: 6px; padding-top: 4px }
+.both-dates.show { display: flex }
 .both-src-label {
-  grid-column: 1 / -1;
-  font-size: 8px;
-  color: var(--text2);
-  letter-spacing: .08em;
-  font-family: 'DM Mono', monospace;
+  font-size: 9px; color: var(--ink-3); letter-spacing: .08em;
+  text-transform: uppercase; font-family: 'Geist Mono', monospace;
+  margin-top: 4px;
 }
+.both-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px }
 
-/* ── COMPONENT TREE ── */
-.sel-row { display: flex; gap: 5px; margin-bottom: 9px }
-.sel-btn {
-  flex: 1;
-  padding: 5px;
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text2);
-  font-size: 9px;
-  cursor: pointer;
-  font-family: 'DM Mono', monospace;
-  transition: all var(--dur) var(--ease);
-}
-.sel-btn:hover { border-color: var(--accent); color: var(--text) }
+/* ── COMPONENT CHECKLIST ────────────────────────────────────────── */
 .grp-label {
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--text2);
-  padding: 7px 3px 3px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: 'DM Mono', monospace;
+  font-size: 8px; font-weight: 600; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--ink-3);
+  padding: 8px 2px 4px;
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'Geist Mono', monospace;
 }
 .grp-label::before {
-  content: '';
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--gc, var(--accent));
-  flex-shrink: 0;
+  content: ''; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--gc, var(--jazz-red)); flex-shrink: 0;
 }
 .comp-item {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 7px;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: background var(--dur) var(--ease);
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 7px; border-radius: 6px;
+  border: 1px solid transparent; cursor: pointer;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
   margin-bottom: 1px;
 }
-.comp-item:hover { background: rgba(255,255,255,.03) }
-.comp-item.sel   { background: var(--accent-dim); border-color: rgba(225,26,61,.20) }
+.comp-item:hover { background: var(--line) }
+.comp-item.sel { background: rgba(225,26,61,.08); border-color: rgba(225,26,61,.18) }
 .comp-item input[type=checkbox] {
-  accent-color: var(--accent);
-  cursor: pointer;
-  width: 12px;
-  height: 12px;
-  flex-shrink: 0;
+  accent-color: var(--jazz-red); cursor: pointer;
+  width: 13px; height: 13px; flex-shrink: 0;
 }
-.ci-label { font-size: 10px; flex: 1 }
-.ci-tags  { display: flex; gap: 2px }
-.tag { font-size: 8px; padding: 1px 4px; border-radius: 2px; border: 1px solid }
+.ci-label { font-size: 11px; flex: 1; font-weight: 450 }
+.ci-tags { display: flex; gap: 3px }
+.tag {
+  font-size: 8px; padding: 1px 5px; border-radius: 3px; border: 1px solid;
+  font-family: 'Geist Mono', monospace; letter-spacing: .04em;
+}
 .tag-r { background: rgba(225,26,61,.10); color: #E88; border-color: rgba(225,26,61,.25) }
-.tag-h { background: rgba(167,139,250,.09); color: #a78bfa; border-color: rgba(167,139,250,.22) }
+.tag-h { background: rgba(139,92,246,.09); color: #a78bfa; border-color: rgba(139,92,246,.22) }
 
-/* ── RUN BUTTON ── */
-.run-btn {
-  width: 100%;
-  padding: 11px;
-  background: var(--accent-grad);
-  border: none;
-  border-radius: var(--radius-sm);
-  color: #fff;
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: .09em;
-  cursor: pointer;
+/* ── RUN-AS FIELD ───────────────────────────────────────────────── */
+.run-as-input {
+  width: 100%; background: var(--bg-3); border: 1px solid var(--line);
+  border-radius: 6px; color: var(--ink); padding: 7px 10px;
+  font-family: 'Geist Mono', monospace; font-size: 11px;
+  outline: none; box-sizing: border-box;
+  transition: border-color var(--dur) var(--ease);
+}
+.run-as-input:focus { border-color: var(--jazz-red); box-shadow: 0 0 0 2px rgba(225,26,61,.10) }
+.run-as-input::placeholder { color: var(--ink-3) }
+
+/* ── PROGRESS ───────────────────────────────────────────────────── */
+.prog-bar { height: 2px; background: var(--line); border-radius: 2px; overflow: hidden; display: none }
+.prog-fill { height: 100%; width: 0; background: var(--jazz-grad); transition: width .28s; border-radius: 2px }
+.prog-label { font-size: 9px; color: var(--ink-3); text-align: right; margin-top: 4px; display: none; font-family: 'Geist Mono', monospace }
+
+/* ── SIDEBAR ACTION BUTTONS ─────────────────────────────────────── */
+.side__action { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0 }
+.btn-primary {
+  width: 100%; padding: 10px; background: var(--jazz-grad);
+  border: none; border-radius: 7px; color: #fff;
+  font-weight: 600; font-size: 12px; letter-spacing: .03em;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
+  font-family: inherit; box-shadow: 0 2px 18px rgba(225,26,61,.25);
   transition: opacity var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
-  box-shadow: var(--accent-glow);
+  position: relative; overflow: hidden;
 }
-.run-btn:hover  { opacity: .9; box-shadow: 0 0 30px rgba(225,26,61,.35) }
-.run-btn:active { opacity: .8 }
-.run-btn:disabled { opacity: .32; cursor: not-allowed; box-shadow: none }
-
-/* ── PROGRESS ── */
-.prog-bar { height: 2px; background: var(--border); border-radius: 2px; overflow: hidden; display: none }
-.prog-fill {
-  height: 100%;
-  width: 0;
-  background: var(--accent-grad);
-  transition: width .28s;
-  border-radius: 2px;
+.btn-primary::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.08) 50%, transparent);
+  transform: translateX(-100%); pointer-events: none;
 }
-.prog-label { font-size: 9px; color: var(--text2); text-align: right; margin-top: 4px; display: none; font-family: 'DM Mono', monospace }
+.btn-primary:hover { opacity: .9; box-shadow: 0 4px 28px rgba(225,26,61,.38) }
+.btn-primary:hover::after { animation: shine .55s ease forwards }
+@keyframes shine { to { transform: translateX(100%) } }
+.btn-primary:active { opacity: .8 }
+.btn-primary:disabled { opacity: .32; cursor: not-allowed; box-shadow: none }
+.btn-primary svg { width: 13px; height: 13px; fill: currentColor; flex-shrink: 0 }
+.btn-ghost {
+  width: 100%; padding: 8px; background: transparent;
+  border: 1px solid var(--line-2); border-radius: 7px; color: var(--ink-2);
+  font-size: 11.5px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
+  font-family: inherit; font-weight: 500;
+  transition: all var(--dur) var(--ease);
+}
+.btn-ghost:hover { border-color: var(--line-strong); color: var(--ink); background: var(--line) }
+.btn-ghost:disabled { opacity: .32; cursor: not-allowed }
+.btn-ghost svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round }
 
-/* ── PAGE HEADER ── */
-.pg-head { display: flex; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--border) }
-.breadcrumb { font-size: 10px; color: var(--text2); margin-bottom: 5px; font-family: 'DM Mono', monospace }
-.breadcrumb a { color: var(--text2); text-decoration: none }
-.breadcrumb a:hover { color: var(--text) }
-.pg-title { font-size: 19px; font-weight: 800; letter-spacing: -.02em }
-.pg-sub   { font-size: 10px; color: var(--text2); margin-top: 3px; font-family: 'DM Mono', monospace }
+/* ── NETWORK STATUS ─────────────────────────────────────────────── */
+.net-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-3); border: 1px solid var(--line);
+  border-radius: 7px;
+  font-size: 10px; color: var(--ink-3);
+  font-family: 'Geist Mono', monospace;
+}
+.net-item { display: flex; align-items: center; gap: 5px }
+.net-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  background: var(--ink-4);
+  transition: background .3s;
+}
+.net-dot.ok  { background: var(--ok) }
+.net-dot.err { background: var(--err) }
+.net-dot.checking { background: var(--warn); animation: blink-dot 1s infinite }
+.net-sep { color: var(--ink-4); padding: 0 2px }
+.net-vpn-hint {
+  margin-left: auto; font-size: 9px; color: var(--warn);
+  display: none;
+}
+.net-vpn-hint.show { display: block }
+
+/* ── CACHE BANNER ───────────────────────────────────────────────── */
+.cache-banner {
+  display: none;
+  background: rgba(70,194,154,.06); border: 1px solid rgba(70,194,154,.20);
+  border-radius: 8px; padding: 10px 13px;
+  font-size: 10px; color: var(--ok);
+  font-family: 'Geist Mono', monospace; letter-spacing: .03em;
+}
+
+/* ── MAIN AREA ──────────────────────────────────────────────────── */
+.main {
+  padding: 22px 24px; display: flex; flex-direction: column;
+  gap: 20px; overflow-y: auto; min-height: 0;
+}
+
+/* ── BREADCRUMBS ────────────────────────────────────────────────── */
+.crumbs {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; color: var(--ink-3);
+  font-family: 'Geist Mono', monospace; margin-bottom: 10px;
+}
+.crumbs__sep { color: var(--ink-4) }
+.crumbs__current { color: var(--ink-2) }
+
+/* ── PAGE HEAD ──────────────────────────────────────────────────── */
+.page-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding-bottom: 18px; border-bottom: 1px solid var(--line); gap: 12px;
+}
+.page-head__title { flex: 1 }
+.page-head__eyebrow {
+  font-size: 10px; color: var(--ink-3);
+  font-family: 'Geist Mono', monospace; letter-spacing: .05em;
+  margin-bottom: 7px; display: block;
+}
+.pg-title {
+  font-size: 28px; font-weight: 700; letter-spacing: -.04em;
+  color: var(--ink); line-height: 1.1; margin-bottom: 7px;
+}
+.pg-title .em {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic; font-weight: 400; margin-right: 5px;
+}
+.pg-sub { font-size: 11.5px; color: var(--ink-2); line-height: 1.5 }
+.pg-sub .mono { font-family: 'Geist Mono', monospace; color: var(--ink) }
+.page-head__actions { display: flex; align-items: center; gap: 7px; flex-shrink: 0; padding-top: 4px }
+.chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 20px;
+  border: 1px solid var(--line-2); background: var(--line);
+  font-size: 10.5px; font-weight: 500; color: var(--ink-2);
+  white-space: nowrap;
+}
+.chip .dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--ok); flex-shrink: 0;
+}
+.chip--live .dot { animation: blink-dot 1.4s ease-in-out infinite }
+@keyframes blink-dot { 0%,100% { opacity: 1 } 50% { opacity: .2 } }
 .status-badge {
-  margin-left: auto;
-  font-size: 9px;
-  padding: 3px 10px;
-  border-radius: 4px;
-  font-weight: 600;
-  letter-spacing: .09em;
-  border: 1px solid var(--border2);
-  color: var(--text2);
-  background: var(--border);
-  font-family: 'DM Mono', monospace;
-  text-transform: uppercase;
+  font-size: 9px; padding: 4px 11px; border-radius: 20px;
+  font-weight: 600; letter-spacing: .09em;
+  border: 1px solid var(--line-2); color: var(--ink-2);
+  background: var(--line); font-family: 'Geist Mono', monospace;
+  text-transform: uppercase; white-space: nowrap;
 }
-.status-badge.running {
-  background: var(--accent-dim);
-  color: var(--accent);
-  border-color: rgba(225,26,61,.30);
+.status-badge.running { background: rgba(225,26,61,.12); color: var(--jazz-red); border-color: rgba(225,26,61,.28) }
+.status-badge.done    { background: rgba(70,194,154,.09); color: var(--ok); border-color: rgba(70,194,154,.28) }
+.head-btn {
+  height: 30px; padding: 0 11px;
+  border: 1px solid var(--line-2); border-radius: 6px;
+  background: var(--line); color: var(--ink-2);
+  font-size: 11px; cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  font-family: inherit; white-space: nowrap;
+  transition: all var(--dur) var(--ease);
 }
-.status-badge.done {
-  background: rgba(0,200,122,.09);
-  color: var(--success);
-  border-color: rgba(0,200,122,.28);
+.head-btn:hover { background: var(--line-2); color: var(--ink) }
+.head-btn svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round }
+
+/* ── RUN BANNER ─────────────────────────────────────────────────── */
+.run-banner {
+  display: none; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: rgba(225,26,61,.06); border: 1px solid rgba(225,26,61,.18);
+  border-radius: 8px; font-size: 11px; color: var(--ink-2);
 }
-@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+.run-banner.show { display: flex }
+.spinner {
+  width: 14px; height: 14px; flex-shrink: 0;
+  border: 2px solid rgba(225,26,61,.25); border-top-color: var(--jazz-red);
+  border-radius: 50%; animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg) } }
+.muted { color: var(--ink-3); font-size: 10px; font-family: 'Geist Mono', monospace }
 .pulse {
-  display: inline-block;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  animation: pulse 1.1s ease-in-out infinite;
-  margin-right: 5px;
-  vertical-align: middle;
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--jazz-red); animation: blink-dot 1.1s ease-in-out infinite;
+  margin-right: 5px; vertical-align: middle;
 }
 
-/* ── SUMMARY CARDS ── */
-.sum-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 11px }
+/* ── SUMMARY CARDS ──────────────────────────────────────────────── */
+.sum-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px }
 .sum-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 13px 14px;
-  position: relative;
-  overflow: hidden;
-  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  background: var(--bg-3); border: 1px solid var(--line);
+  border-radius: 10px; padding: 14px;
+  position: relative; overflow: hidden;
+}
+.sum-card::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(80px 80px at 95% 5%, rgba(225,26,61,.07), transparent 70%);
+  pointer-events: none;
 }
 .sum-card::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: var(--sc-c, var(--accent));
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 1.5px; background: var(--sc-c, var(--jazz-red)); opacity: .7;
 }
-.sc-name { font-size: 8px; color: var(--text2); letter-spacing: .10em; text-transform: uppercase; margin-bottom: 5px; font-family: 'DM Mono', monospace }
-.sc-val  { font-size: 18px; font-weight: 800; color: var(--sc-c, var(--accent)); letter-spacing: -.02em }
-.sc-evt  { font-size: 9px; color: var(--text2); margin-top: 3px; font-family: 'DM Mono', monospace }
+.sc-name { font-size: 9px; color: var(--ink-3); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 6px; font-family: 'Geist Mono', monospace }
+.sc-val  { font-size: 20px; font-weight: 700; color: var(--sc-c, var(--jazz-red)); letter-spacing: -.03em }
+.sc-evt  { font-size: 10px; color: var(--ink-3); margin-top: 4px; font-family: 'Geist Mono', monospace }
 
-/* ── CHARTS ── */
+/* ── CHART GRID ─────────────────────────────────────────────────── */
 .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
 .chart-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 15px;
-  transition: background var(--dur) var(--ease);
+  background: var(--bg-3); border: 1px solid var(--line);
+  border-radius: 10px; padding: 15px;
 }
 .chart-card.wide { grid-column: 1 / -1 }
 .ct {
-  font-size: 9px;
-  color: var(--text2);
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  font-weight: 600;
-  margin-bottom: 11px;
-  font-family: 'DM Mono', monospace;
+  font-size: 9px; color: var(--ink-3); letter-spacing: .08em;
+  text-transform: uppercase; font-weight: 600; margin-bottom: 11px;
+  font-family: 'Geist Mono', monospace;
 }
 canvas { max-height: 200px }
 
-/* ── RESULTS ── */
+/* ── RESULTS CARD ───────────────────────────────────────────────── */
 .results-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  transition: background var(--dur) var(--ease);
+  background: var(--bg-3); border: 1px solid var(--line);
+  border-radius: 10px; overflow: hidden;
 }
 .res-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 15px;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(90deg, var(--accent-dim), transparent);
+  display: flex; align-items: center; gap: 8px;
+  padding: 13px 15px; border-bottom: 1px solid var(--line);
+  background: linear-gradient(90deg, rgba(225,26,61,.06), transparent);
 }
-.res-title { font-size: 12px; font-weight: 700 }
+.res-title { font-size: 13px; font-weight: 600 }
 .tabs-bar {
-  display: flex;
-  gap: 2px;
-  padding: 9px 13px;
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto;
+  display: flex; gap: 2px; padding: 8px 12px;
+  border-bottom: 1px solid var(--line); overflow-x: auto;
 }
 .tab {
-  padding: 4px 11px;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text2);
-  cursor: pointer;
-  font-family: 'DM Mono', monospace;
-  font-size: 10px;
-  white-space: nowrap;
-  transition: all var(--dur) var(--ease);
+  padding: 4px 11px; border-radius: 5px;
+  border: 1px solid transparent; background: transparent;
+  color: var(--ink-3); cursor: pointer;
+  font-family: 'Geist Mono', monospace; font-size: 10px;
+  white-space: nowrap; transition: all var(--dur) var(--ease);
 }
-.tab:hover { color: var(--text) }
-.tab.active {
-  background: var(--accent-dim);
-  border-color: rgba(225,26,61,.28);
-  color: var(--accent);
-}
-.tab-panel { display: none; padding: 15px }
+.tab:hover { color: var(--ink); background: var(--line) }
+.tab.active { background: rgba(225,26,61,.10); border-color: rgba(225,26,61,.24); color: var(--jazz-red) }
+.tab-panel { display: none; padding: 14px 15px }
 .tab-panel.active { display: block }
 
-/* ── TABLES ── */
+/* ── TABLES ─────────────────────────────────────────────────────── */
 .tbl-wrap { overflow-x: auto }
 table { width: 100%; border-collapse: collapse; font-size: 11px }
 th {
-  background: var(--border);
-  color: var(--text2);
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  font-size: 8px;
-  padding: 8px 11px;
-  text-align: right;
-  border-bottom: 1px solid var(--border2);
-  font-weight: 500;
-  white-space: nowrap;
-  font-family: 'DM Mono', monospace;
+  background: var(--bg-4); color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: .08em;
+  font-size: 8px; padding: 8px 11px;
+  text-align: right; border-bottom: 1px solid var(--line-2);
+  font-weight: 500; white-space: nowrap;
+  font-family: 'Geist Mono', monospace;
 }
 th:first-child, th:nth-child(2) { text-align: left }
 td {
-  padding: 7px 11px;
-  border-bottom: 1px solid rgba(255,255,255,.03);
-  text-align: right;
-  font-family: 'DM Mono', monospace;
+  padding: 7px 11px; border-bottom: 1px solid rgba(255,255,255,.02);
+  text-align: right; font-family: 'Geist Mono', monospace;
 }
-td:first-child { text-align: left; color: var(--text2) }
+td:first-child { text-align: left; color: var(--ink-3) }
 td:nth-child(2){ text-align: left }
-tr:hover td { background: rgba(255,255,255,.02) }
-.pos { color: var(--success) }
-.neg { color: var(--danger) }
-.zer { color: var(--text2) }
+tr:hover td { background: rgba(255,255,255,.015) }
+.pos { color: var(--ok) }
+.neg { color: var(--err) }
+.zer { color: var(--ink-3) }
 .src-raid { color: #E88FAA }
 .src-hive { color: #a78bfa }
 
-/* ── EMPTY / NOTIF ── */
+/* ── EMPTY STATE ────────────────────────────────────────────────── */
 .empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 13px;
-  color: var(--text2);
-  text-align: center;
-  padding: 60px 24px;
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; color: var(--ink-3); text-align: center; padding: 80px 24px;
 }
-.empty-icon { font-size: 42px; opacity: .2 }
-.empty p    { font-size: 11px; line-height: 1.7; max-width: 300px }
+.empty-icon { font-size: 40px; opacity: .15 }
+.empty p { font-size: 12px; line-height: 1.7; max-width: 320px; color: var(--ink-3) }
+.empty strong { color: var(--ink-2) }
+
+/* ── TOAST ──────────────────────────────────────────────────────── */
 .notif {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 1000;
-  padding: 10px 15px;
-  border-radius: var(--radius-sm);
-  font-size: 11px;
-  max-width: 290px;
-  transform: translateY(60px);
-  opacity: 0;
-  transition: all .23s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: 'DM Mono', monospace;
+  position: fixed; bottom: 20px; right: 20px; z-index: 1000;
+  padding: 10px 15px; border-radius: 8px; font-size: 11px; max-width: 300px;
+  transform: translateY(60px); opacity: 0;
+  transition: all .23s cubic-bezier(.4,0,.2,1);
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'Geist Mono', monospace; box-shadow: var(--shadow-lg);
 }
 .notif.show  { transform: translateY(0); opacity: 1 }
-.notif-ok    { background: var(--surface2); border: 1px solid var(--success); color: var(--success) }
-.notif-err   { background: var(--surface2); border: 1px solid var(--danger);  color: var(--danger) }
+.notif-ok    { background: var(--bg-4); border: 1px solid rgba(70,194,154,.35); color: var(--ok) }
+.notif-err   { background: var(--bg-4); border: 1px solid rgba(231,61,92,.35); color: var(--err) }
 
-@media (max-width: 840px) {
+@media (max-width: 860px) {
   .rv-page { grid-template-columns: 1fr }
-  .sidebar { position: static; height: auto }
+  .side { position: static; height: auto }
   .chart-grid { grid-template-columns: 1fr }
 }
 {% endblock %}
@@ -393,71 +468,173 @@ tr:hover td { background: rgba(255,255,255,.02) }
 {% block content %}
 <div class="rv-page">
 
-  <!-- ═══ SIDEBAR ═══ -->
-  <aside class="sidebar">
+  <!-- ════ SIDEBAR ════ -->
+  <aside class="side">
 
-    <div class="sb-sec">
-      <div class="sb-label">Date Range</div>
-      <div class="date-row">
-        <div class="field"><label>Start</label><input type="date" id="gStart"/></div>
-        <div class="field"><label>End</label>  <input type="date" id="gEnd"/></div>
+    <div class="side__header">
+      <span class="side__title">Validation Filters</span>
+      <button class="side__reset" onclick="resetFilters()">Reset</button>
+    </div>
+
+    <!-- Date Range -->
+    <div class="side__section">
+      <div class="side__legend">
+        <span>Reporting Period</span>
+        <span class="side__legend-tag">PKT</span>
+      </div>
+      <div class="range-row">
+        <div class="field">
+          <span class="field__label">From</span>
+          <div class="field__control">
+            <svg viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/></svg>
+            <input type="date" id="gStart"/>
+          </div>
+        </div>
+        <div class="field">
+          <span class="field__label">To</span>
+          <div class="field__control">
+            <svg viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/></svg>
+            <input type="date" id="gEnd"/>
+          </div>
+        </div>
+      </div>
+      <div class="preset-row">
+        <button class="preset" onclick="applyPreset('today',this)">Today</button>
+        <button class="preset" onclick="applyPreset('7d',this)">7d</button>
+        <button class="preset" onclick="applyPreset('mtd',this)">MTD</button>
+        <button class="preset" onclick="applyPreset('qtd',this)">QTD</button>
       </div>
     </div>
 
-    <div class="sb-sec">
-      <div class="sb-label">Data Source</div>
-      <div class="src-pills">
-        <button class="sp ar" onclick="setSrc('raid',this)">RAID</button>
-        <button class="sp"    onclick="setSrc('hive',this)">HIVE</button>
-        <button class="sp"    onclick="setSrc('both',this)">BOTH</button>
+    <!-- Data Source -->
+    <div class="side__section">
+      <div class="side__legend">
+        <span>Data Source</span>
+        <span class="side__legend-tag mono" id="srcLabel">RAID</span>
       </div>
+      <div class="seg" role="tablist">
+        <span class="seg__indicator" id="segInd"></span>
+        <button class="seg__btn is-active" onclick="setSrc('raid',0)">RAID</button>
+        <button class="seg__btn" onclick="setSrc('hive',1)">HIVE</button>
+        <button class="seg__btn" onclick="setSrc('both',2)">BOTH</button>
+      </div>
+      <div class="src-hint" id="srcHint">Querying RAID warehouse — billing-side ledger of expected revenue.</div>
       <div class="both-dates" id="bothDates">
-        <span class="both-src-label" style="margin-top:8px">RAID dates</span>
-        <div class="field"><label>Start</label><input type="date" id="rStart"/></div>
-        <div class="field"><label>End</label>  <input type="date" id="rEnd"/></div>
-        <span class="both-src-label" style="margin-top:4px">Hive dates</span>
-        <div class="field"><label>Start</label><input type="date" id="hStart"/></div>
-        <div class="field"><label>End</label>  <input type="date" id="hEnd"/></div>
+        <span class="both-src-label">RAID dates</span>
+        <div class="both-row">
+          <div class="field"><span class="field__label">Start</span><input type="date" id="rStart"/></div>
+          <div class="field"><span class="field__label">End</span><input type="date" id="rEnd"/></div>
+        </div>
+        <span class="both-src-label">Hive dates</span>
+        <div class="both-row">
+          <div class="field"><span class="field__label">Start</span><input type="date" id="hStart"/></div>
+          <div class="field"><span class="field__label">End</span><input type="date" id="hEnd"/></div>
+        </div>
       </div>
     </div>
 
-    <div class="sb-sec" style="flex:1;overflow-y:auto">
-      <div class="sb-label">Components</div>
-      <div class="sel-row">
-        <button class="sel-btn" onclick="selAll(true)">All</button>
-        <button class="sel-btn" onclick="selAll(false)">None</button>
+    <!-- Components -->
+    <div class="side__section grow">
+      <div class="side__legend">
+        <span>Components</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="side__reset" onclick="selAll(true)">All</button>
+          <span style="color:var(--ink-4)">·</span>
+          <button class="side__reset" onclick="selAll(false)">None</button>
+        </div>
       </div>
       <div id="compTree"></div>
     </div>
 
-    <div class="sb-sec">
+    <!-- Run As -->
+    <div class="side__section">
+      <div class="side__legend"><span>Run As</span></div>
+      <input type="text" id="runBy" class="run-as-input" placeholder="your name"
+             oninput="localStorage.setItem('rv_run_by',this.value)"/>
+    </div>
+
+    <!-- Progress -->
+    <div class="side__section" style="padding:10px 14px">
       <div class="prog-bar" id="progBar"><div class="prog-fill" id="progFill"></div></div>
       <div class="prog-label" id="progLabel"></div>
     </div>
 
-    <div style="padding:0 13px 13px">
-      <button class="run-btn" id="runBtn" onclick="runValidation()">&#9654; RUN VALIDATION</button>
+    <!-- Actions -->
+    <div class="side__action">
+      <!-- Network status — always visible above run button -->
+      <div class="net-bar" id="netBar">
+        <div class="net-item">
+          <span class="net-dot checking" id="netDotOracle"></span>
+          <span id="netLabelOracle">Oracle</span>
+        </div>
+        <span class="net-sep">·</span>
+        <div class="net-item">
+          <span class="net-dot checking" id="netDotHive"></span>
+          <span id="netLabelHive">Hive</span>
+        </div>
+        <span class="net-vpn-hint" id="netVpnHint">Check VPN</span>
+      </div>
+      <button class="btn-primary" id="runBtn" onclick="runValidation()">
+        <svg viewBox="0 0 16 16"><path d="M5 3.5v9l8-4.5z"/></svg>
+        Run Validation
+      </button>
+      <button class="btn-ghost" id="loadBtn" onclick="loadLastRun()">
+        <svg viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.5L13 6"/><path d="M13 3v3h-3"/></svg>
+        Load Last Run
+      </button>
     </div>
 
   </aside>
 
-  <!-- ═══ MAIN ═══ -->
+  <!-- ════ MAIN ════ -->
   <main class="main" id="mainArea">
 
-    <div class="pg-head">
-      <div>
-        <div class="breadcrumb"><a href="/">Portal</a> › <a href="#">Controls</a> › Revenue Validation</div>
-        <div class="pg-title">Revenue Validation</div>
-        <div class="pg-sub">RAID ↔ Hive prepaid reconciliation · 12 components · parallel execution</div>
+    <!-- Page head -->
+    <div>
+      <div class="crumbs">
+        <span>Controls</span><span class="crumbs__sep">/</span>
+        <span>Revenue Assurance</span><span class="crumbs__sep">/</span>
+        <span class="crumbs__current">Revenue Validation</span>
       </div>
-      <span class="status-badge" id="statusBadge">IDLE</span>
+      <div class="page-head">
+        <div class="page-head__title">
+          <span class="page-head__eyebrow">Revenue Assurance · Run BAV-24830</span>
+          <h1 class="pg-title"><span class="em">Revenue</span>Validation</h1>
+          <div class="pg-sub">RAID ↔ Hive prepaid reconciliation · <span class="mono">12 components</span> · parallel execution</div>
+        </div>
+        <div class="page-head__actions">
+          <span class="chip chip--live">
+            <span class="dot"></span>
+            <span id="syncStatus">Last sync · 3m ago</span>
+          </span>
+          <button class="head-btn">
+            <svg viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.5L13 6"/><path d="M13 3v3h-3"/></svg>
+            Refresh
+          </button>
+          <button class="head-btn">
+            <svg viewBox="0 0 16 16"><path d="M8 2.5v8M4.5 7l3.5 3.5L11.5 7M3 13h10"/></svg>
+            Report
+          </button>
+          <span class="status-badge" id="statusBadge">IDLE</span>
+        </div>
+      </div>
     </div>
 
+    <!-- Run status banner -->
+    <div class="run-banner" id="runBanner">
+      <span class="spinner"></span>
+      <span id="runBannerText">Starting validation…</span>
+      <span style="flex:1"></span>
+      <span class="muted">est. 12s remaining</span>
+    </div>
+
+    <!-- Summary -->
     <div id="sumArea" style="display:none">
       <div class="section-title" style="margin-bottom:11px">Summary</div>
       <div class="sum-grid" id="sumGrid"></div>
     </div>
 
+    <!-- Charts -->
     <div id="chartsArea" style="display:none">
       <div class="section-title" style="margin-bottom:11px">Visualisations</div>
       <div class="chart-grid">
@@ -476,20 +653,26 @@ tr:hover td { background: rgba(255,255,255,.02) }
       </div>
     </div>
 
+    <!-- Results -->
     <div id="resultsArea" style="display:none">
       <div class="results-card">
         <div class="res-head">
           <span class="res-title">Detailed Results</span>
-          <span id="runMeta" style="font-size:9px;color:var(--text2);margin-left:8px;font-family:'DM Mono',monospace"></span>
+          <span id="runMeta" style="font-size:9px;color:var(--ink-3);margin-left:8px;font-family:'Geist Mono',monospace"></span>
         </div>
         <div class="tabs-bar" id="tabsBar"></div>
         <div id="tabsBody"></div>
       </div>
     </div>
 
+    <!-- Cache banner -->
+    <div class="cache-banner" id="cacheBanner"></div>
+
+    <!-- Empty state -->
     <div class="empty" id="emptyState">
       <div class="empty-icon">⚡</div>
-      <p>Pick a date range and source, select components, then click <strong>Run Validation</strong>.</p>
+      <p>Pick a date range and source, select components, then click <strong>Run Validation</strong>.<br/>
+         Use <strong>Load Last Run</strong> to restore a previous result without re-querying.</p>
     </div>
 
   </main>
@@ -507,12 +690,81 @@ const COMPONENTS = {{ components | tojson }};
 const GRP_COLORS = {{ group_colors | tojson }};
 let activeSrc = 'raid', charts = {}, currentResults = null;
 
-// Chart axis colours — readable on both themes
 const AXIS_COLOR = 'rgba(154,139,170,.7)';
 const GRID_COLOR = 'rgba(255,255,255,.04)';
 
-// ── Build sidebar component tree ──────────────────────────────────────────────
-(function () {
+const SRC_HINTS = {
+  raid: 'Querying RAID warehouse — billing-side ledger of expected revenue.',
+  hive: 'Querying HIVE lake — raw CDR / xDR feed from mediation.',
+  both: 'Cross-checking RAID against HIVE for end-to-end leakage detection.',
+};
+
+// ── Init ────────────────────────────────────────────────────────────────────
+(function init() {
+  // restore run-by name
+  const saved = localStorage.getItem('rv_run_by');
+  if (saved) document.getElementById('runBy').value = saved;
+
+  // init segmented toggle indicator
+  const ind  = document.getElementById('segInd');
+  const btns = document.querySelectorAll('.seg__btn');
+  const n    = btns.length;
+  ind.style.width     = `calc(${100/n}% - 4px)`;
+  ind.style.transform = 'translateX(0)';
+
+  // build component tree
+  buildCompTree();
+}());
+
+// ── Segmented toggle ────────────────────────────────────────────────────────
+function setSrc(src, idx) {
+  activeSrc = src;
+  const btns = document.querySelectorAll('.seg__btn');
+  const n    = btns.length;
+  btns.forEach((b, i) => b.classList.toggle('is-active', i === idx));
+  const ind = document.getElementById('segInd');
+  ind.style.width     = `calc(${100/n}% - 4px)`;
+  ind.style.transform = `translateX(calc(${idx * 100}% + ${idx * 4}px))`;
+  document.getElementById('srcLabel').textContent = src.toUpperCase();
+  document.getElementById('srcHint').textContent  = SRC_HINTS[src];
+  const bd = document.getElementById('bothDates');
+  bd.classList.toggle('show', src === 'both');
+  if (src === 'both') {
+    const s = document.getElementById('gStart').value;
+    const e = document.getElementById('gEnd').value;
+    if (!document.getElementById('rStart').value) {
+      document.getElementById('rStart').value = s;
+      document.getElementById('rEnd').value   = e;
+      document.getElementById('hStart').value = s;
+      document.getElementById('hEnd').value   = e;
+    }
+  }
+}
+
+// ── Preset dates ────────────────────────────────────────────────────────────
+function applyPreset(id, btn) {
+  document.querySelectorAll('.preset').forEach(b => b.classList.remove('is-active'));
+  btn.classList.add('is-active');
+  const today = new Date();
+  const fmt   = d => d.toISOString().split('T')[0];
+  let from, to = fmt(today);
+  if (id === 'today') { from = to; }
+  else if (id === '7d')  { const d = new Date(today); d.setDate(d.getDate() - 6); from = fmt(d); }
+  else if (id === 'mtd') { from = fmt(new Date(today.getFullYear(), today.getMonth(), 1)); }
+  else if (id === 'qtd') { const q = Math.floor(today.getMonth() / 3); from = fmt(new Date(today.getFullYear(), q * 3, 1)); }
+  document.getElementById('gStart').value = from;
+  document.getElementById('gEnd').value   = to;
+}
+
+// ── Reset filters ───────────────────────────────────────────────────────────
+function resetFilters() {
+  document.querySelectorAll('.preset').forEach(b => b.classList.remove('is-active'));
+  setSrc('raid', 0);
+  selAll(true);
+}
+
+// ── Build sidebar component tree ────────────────────────────────────────────
+function buildCompTree() {
   const groups = {};
   for (const [k, v] of Object.entries(COMPONENTS))
     (groups[v.group] = groups[v.group] || []).push({ k, ...v });
@@ -533,7 +785,7 @@ const GRID_COLOR = 'rgba(255,255,255,.04)';
     }
   }
   document.getElementById('compTree').innerHTML = html;
-}());
+}
 
 function toggleItem(k, el) {
   const chk = document.getElementById('chk_' + k);
@@ -542,33 +794,14 @@ function toggleItem(k, el) {
 }
 function selAll(v) {
   for (const k of Object.keys(COMPONENTS)) {
-    document.getElementById('chk_' + k).checked = v;
-    document.getElementById('ci_' + k).classList.toggle('sel', v);
+    const chk = document.getElementById('chk_' + k);
+    const ci  = document.getElementById('ci_' + k);
+    if (chk) chk.checked = v;
+    if (ci)  ci.classList.toggle('sel', v);
   }
 }
 
-// ── Source toggle ──────────────────────────────────────────────────────────────
-function setSrc(src, btn) {
-  activeSrc = src;
-  document.querySelectorAll('.sp').forEach(b => b.className = 'sp');
-  btn.classList.add({ raid: 'ar', hive: 'ah', both: 'ab' }[src]);
-  const bd = document.getElementById('bothDates');
-  bd.classList.toggle('show', src === 'both');
-  if (src === 'both') {
-    const s = document.getElementById('gStart').value;
-    const e = document.getElementById('gEnd').value;
-    ['rStart', 'rEnd', 'hStart', 'hEnd'].forEach(id => {
-      if (!document.getElementById(id).value) {
-        document.getElementById('rStart').value = s;
-        document.getElementById('rEnd').value   = e;
-        document.getElementById('hStart').value = s;
-        document.getElementById('hEnd').value   = e;
-      }
-    });
-  }
-}
-
-// ── Run ────────────────────────────────────────────────────────────────────────
+// ── Run ─────────────────────────────────────────────────────────────────────
 async function runValidation() {
   const selected = Object.keys(COMPONENTS).filter(k => document.getElementById('chk_' + k)?.checked);
   if (!selected.length) { notify('Select at least one component', 'err'); return; }
@@ -577,97 +810,251 @@ async function runValidation() {
   const ed = document.getElementById('gEnd').value.replace(/-/g, '');
   if (!sd || !ed) { notify('Select start and end date', 'err'); return; }
 
+  const runBy = document.getElementById('runBy').value.trim() || 'anonymous';
   const body = {
-    components: selected,
-    source:     activeSrc,
-    start_date: sd,
-    end_date:   ed,
+    components: selected, source: activeSrc,
+    start_date: sd, end_date: ed, run_by: runBy,
     raid_start: activeSrc === 'both' ? document.getElementById('rStart').value.replace(/-/g, '') : sd,
     raid_end:   activeSrc === 'both' ? document.getElementById('rEnd').value.replace(/-/g, '')   : ed,
     hive_start: activeSrc === 'both' ? document.getElementById('hStart').value.replace(/-/g, '') : sd,
     hive_end:   activeSrc === 'both' ? document.getElementById('hEnd').value.replace(/-/g, '')   : ed,
   };
 
-  document.getElementById('runBtn').disabled = true;
+  document.getElementById('runBtn').disabled  = true;
+  document.getElementById('loadBtn').disabled = true;
   const badge = document.getElementById('statusBadge');
   badge.className = 'status-badge running';
   badge.innerHTML = '<span class="pulse"></span>RUNNING';
+  document.getElementById('syncStatus').textContent = 'Validation running';
+  document.getElementById('runBanner').classList.add('show');
+  document.getElementById('runBannerText').textContent = 'Starting validation…';
   document.getElementById('progBar').style.display   = 'block';
   document.getElementById('progLabel').style.display = 'block';
   document.getElementById('emptyState').style.display = 'none';
 
   const resp = await fetch('/revenue-validation/api/run', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
   const { job_id, error } = await resp.json();
   if (!resp.ok) { notify(error || 'Start failed', 'err'); resetUI(); return; }
 
-  // SSE progress stream
   let jobDone = false;
   const sse = new EventSource(`/revenue-validation/api/job/${job_id}/stream`);
   sse.onmessage = e => {
-    const d = JSON.parse(e.data);
+    const d   = JSON.parse(e.data);
     const pct = d.total > 0 ? Math.round(d.done / d.total * 100) : 0;
     document.getElementById('progFill').style.width = pct + '%';
     document.getElementById('progLabel').textContent = `${d.done} / ${d.total} components`;
-    if (d.status === 'done') { jobDone = true; sse.close(); loadResults(job_id); }
+    document.getElementById('runBannerText').textContent =
+      `Validating ${d.done} / ${d.total} components against ${activeSrc.toUpperCase()}…`;
+
+    // render each component the moment it finishes
+    if (d.new_results && Object.keys(d.new_results).length) {
+      currentResults = currentResults || {};
+      for (const [k, r] of Object.entries(d.new_results)) {
+        currentResults[k] = r;
+      }
+      renderPartial();
+    }
+
+    if (d.status === 'done') {
+      jobDone = true;
+      sse.close();
+      finaliseResults(job_id);
+    }
   };
-  // onerror fires when server closes the connection after 'done' — guard with jobDone flag
   sse.onerror = () => { if (jobDone) return; sse.close(); notify('Stream error — check console', 'err'); resetUI(); };
 }
 
-async function loadResults(job_id) {
-  const r = await fetch(`/revenue-validation/api/job/${job_id}`);
+// Called as each component arrives during streaming
+let _tabsInitialised = false;
+function renderPartial() {
+  if (!Object.keys(currentResults).length) return;
+  document.getElementById('emptyState').style.display = 'none';
+  renderSummary();
+  // Init tab structure once, then only add new tabs
+  if (!_tabsInitialised) {
+    const bar  = document.getElementById('tabsBar');
+    const body = document.getElementById('tabsBody');
+    bar.innerHTML  = mkTab('_all', 'All', true);
+    body.innerHTML = `<div class="tab-panel active" id="tp__all"></div>`;
+    document.getElementById('resultsArea').style.display = 'block';
+    _tabsInitialised = true;
+    bar.querySelector('.tab').addEventListener('click', e => switchTab('_all', e.currentTarget));
+  }
+  // Add any component tabs not yet in the DOM
+  const bar  = document.getElementById('tabsBar');
+  const body = document.getElementById('tabsBody');
+  for (const [k, r] of Object.entries(currentResults)) {
+    if (!document.getElementById('tp_' + k)) {
+      const btn = document.createElement('button');
+      btn.className = 'tab'; btn.dataset.t = k; btn.textContent = r.label;
+      btn.addEventListener('click', () => switchTab(k, btn));
+      bar.appendChild(btn);
+      const panel = document.createElement('div');
+      panel.className = 'tab-panel'; panel.id = 'tp_' + k;
+      panel.innerHTML = buildCompPanel(r);
+      body.appendChild(panel);
+    }
+  }
+  // Refresh the All Components table with latest data
+  const allPanel = document.getElementById('tp__all');
+  if (allPanel) allPanel.innerHTML = buildAllTable();
+}
+
+// Called when SSE reports status=done
+async function finaliseResults(job_id) {
+  // fetch final job state for errors and to ensure we have everything
+  const r   = await fetch(`/revenue-validation/api/job/${job_id}`);
   const job = await r.json();
-  currentResults = job.results || {};
-  const jobErrors = job.errors || {};
+  // merge in anything that arrived after last SSE tick
+  for (const [k, v] of Object.entries(job.results || {})) currentResults[k] = v;
 
   resetUI();
+  hideCacheBanner();
+  _tabsInitialised = false; // allow re-init on next run
+
   document.getElementById('runMeta').textContent =
     `${Object.keys(currentResults).length} components · ${new Date().toLocaleTimeString()}`;
 
+  const jobErrors = job.errors || {};
+  const sourceErrors = [];
+
+  // Job-level errors = components that crashed entirely (no tab was created)
   if (Object.keys(jobErrors).length) {
-    const msgs = Object.entries(jobErrors).map(([k, v]) => `${k}: ${v}`).join('\n');
-    console.error('Job-level errors:\n' + msgs);
-    notify(`${Object.keys(jobErrors).length} component(s) failed — see console (F12)`, 'err');
+    console.error('Job errors:', jobErrors);
+    const banner = document.getElementById('cacheBanner');
+    const lines = Object.entries(jobErrors).map(([k,v]) =>
+      `<div style="margin-top:5px;font-size:9px;opacity:.8"><strong>${k}</strong>: ${v.slice(0,200)}</div>`
+    ).join('');
+    banner.style.cssText = 'display:block;background:rgba(231,61,92,.08);border-color:rgba(231,61,92,.30);color:var(--err)';
+    banner.innerHTML = `&#9888; ${Object.keys(jobErrors).length} component(s) crashed (no results)${lines}`;
   }
 
-  const sourceErrors = [];
   for (const [, r] of Object.entries(currentResults)) {
     if (r.errors && Object.keys(r.errors).length) {
       for (const [src, msg] of Object.entries(r.errors)) {
-        sourceErrors.push(`${r.label} [${src.toUpperCase()}]: ${msg}`);
+        sourceErrors.push({ label: r.label, src, msg });
         console.error(`${r.label} [${src}]:`, msg);
       }
     }
   }
-  if (sourceErrors.length)
-    notify(`${sourceErrors.length} query error(s) — see console (F12)`, 'err');
+  if (sourceErrors.length && !Object.keys(jobErrors).length) {
+    const isNet = sourceErrors.some(e => /network|vpn|reach|timed out|connect|socket/i.test(e.msg));
+    const sample = sourceErrors[0];
+    const banner = document.getElementById('cacheBanner');
+    banner.style.cssText = 'display:block;background:rgba(231,61,92,.08);border-color:rgba(231,61,92,.30);color:var(--err)';
+    banner.innerHTML = `&#9888; ${sourceErrors.length} query error(s)${isNet ? ' — Check VPN / network' : ''}<br/>
+      <span style="opacity:.7;font-size:9px">${sample.label} [${sample.src.toUpperCase()}]: ${sample.msg.slice(0,200)}</span>`;
+  }
 
   if (!Object.keys(currentResults).length) {
-    notify('No results returned — check DB connections under Admin → Connections', 'err');
+    notify('No results — check DB connections under Admin → Connections', 'err');
     document.getElementById('emptyState').style.display = 'flex';
     return;
   }
 
-  renderSummary();
-  renderCharts();
-  renderTabs();
+  renderPartial();  // ensure final state is rendered
+  renderCharts();   // full chart render once at the end
   notify(`Done · ${Object.keys(currentResults).length} components`, 'ok');
 }
 
 function resetUI() {
-  document.getElementById('runBtn').disabled = false;
+  document.getElementById('runBtn').disabled  = false;
+  document.getElementById('loadBtn').disabled = false;
   const badge = document.getElementById('statusBadge');
-  badge.className  = currentResults ? 'status-badge done' : 'status-badge';
+  badge.className   = currentResults ? 'status-badge done' : 'status-badge';
   badge.textContent = currentResults ? 'DONE' : 'IDLE';
+  document.getElementById('syncStatus').textContent = currentResults ? 'Run complete' : 'Last sync · 3m ago';
+  document.getElementById('runBanner').classList.remove('show');
   document.getElementById('progBar').style.display   = 'none';
   document.getElementById('progLabel').style.display = 'none';
+  _tabsInitialised = false;
 }
 
-// ── Summary ────────────────────────────────────────────────────────────────────
+// ── Connectivity indicator ───────────────────────────────────────────────────
+async function checkConnectivity() {
+  try {
+    const r = await fetch('/revenue-validation/api/connectivity', { signal: AbortSignal.timeout(12000) });
+    if (!r.ok) return;
+    const { oracle, hive } = await r.json();
+    setNetDot('Oracle', oracle.ok, oracle.ms);
+    setNetDot('Hive',   hive.ok,   hive.ms);
+    const anyDown = !oracle.ok || !hive.ok;
+    document.getElementById('netVpnHint').classList.toggle('show', anyDown);
+  } catch { /* ignore fetch errors */ }
+}
+function setNetDot(name, ok, ms) {
+  const dot   = document.getElementById('netDot' + name);
+  const label = document.getElementById('netLabel' + name);
+  if (!dot) return;
+  dot.className   = 'net-dot ' + (ok ? 'ok' : 'err');
+  label.textContent = name + (ms ? ' ' + ms + 'ms' : '');
+  label.title     = ok ? name + ' reachable' : name + ' unreachable — check VPN';
+}
+// check on load, then every 25 seconds
+checkConnectivity();
+setInterval(checkConnectivity, 25000);
+
+function hideCacheBanner() {
+  document.getElementById('cacheBanner').style.display = 'none';
+}
+function showCacheBanner(runAt, runBy) {
+  const b = document.getElementById('cacheBanner');
+  const parts = runAt.split('_');
+  const d = parts[0], t = parts[1] || '';
+  const dt = d.length === 8
+    ? `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)} ${t.slice(0,2)}:${t.slice(2,4)}`
+    : runAt;
+  b.innerHTML = `&#128190; Loaded from cache &nbsp;·&nbsp; Run by <strong>${runBy}</strong> on ${dt}`;
+  b.style.display = 'block';
+}
+
+async function loadLastRun() {
+  const sd = document.getElementById('gStart').value.replace(/-/g, '');
+  const ed = document.getElementById('gEnd').value.replace(/-/g, '');
+  if (!sd || !ed) { notify('Select start and end date first', 'err'); return; }
+
+  document.getElementById('loadBtn').disabled = true;
+  const badge = document.getElementById('statusBadge');
+  badge.className = 'status-badge running';
+  badge.innerHTML = '<span class="pulse"></span>LOADING';
+
+  const params = new URLSearchParams({ start_date: sd, end_date: ed, source: activeSrc });
+  const resp   = await fetch(`/revenue-validation/api/last-run?${params}`);
+
+  if (resp.status === 404) {
+    notify('No cached run found for this date range + source — run first', 'err');
+    badge.className   = 'status-badge';
+    badge.textContent = 'IDLE';
+    document.getElementById('loadBtn').disabled = false;
+    return;
+  }
+  if (!resp.ok) { notify('Failed to load cache', 'err'); resetUI(); return; }
+
+  const cached = await resp.json();
+  currentResults = cached.results || {};
+
+  if (!Object.keys(currentResults).length) {
+    notify('Cache is empty for these params', 'err');
+    resetUI();
+    return;
+  }
+
+  resetUI();
+  document.getElementById('emptyState').style.display = 'none';
+  showCacheBanner(cached.run_at, cached.run_by);
+  document.getElementById('runMeta').textContent =
+    `${Object.keys(currentResults).length} components (cached)`;
+
+  renderSummary();
+  renderCharts();
+  renderTabs();
+  notify(`Loaded ${Object.keys(currentResults).length} components from cache`, 'ok');
+}
+
+// ── Summary ──────────────────────────────────────────────────────────────────
 function renderSummary() {
   let total = 0, tEvt = 0;
   const groups = {};
@@ -693,7 +1080,7 @@ function mkCard(name, amt, evt, col) {
   </div>`;
 }
 
-// ── Charts ─────────────────────────────────────────────────────────────────────
+// ── Charts ───────────────────────────────────────────────────────────────────
 function renderCharts() {
   const keys    = Object.keys(currentResults);
   const labels  = keys.map(k => currentResults[k].label);
@@ -702,15 +1089,14 @@ function renderCharts() {
   const colors  = keys.map(k => GRP_COLORS[currentResults[k].group] || '#E11A3D');
 
   const baseOpts = fmtFn => ({
-    responsive: true,
-    maintainAspectRatio: true,
+    responsive: true, maintainAspectRatio: true,
     plugins: {
       legend: { display: false },
       tooltip: { callbacks: { label: ctx => ' ' + fmtFn(ctx.raw) } },
     },
     scales: {
       x: { ticks: { color: AXIS_COLOR, font: { size: 8 }, maxRotation: 35 }, grid: { color: GRID_COLOR } },
-      y: { ticks: { color: AXIS_COLOR, font: { size: 8 } },                  grid: { color: GRID_COLOR } },
+      y: { ticks: { color: AXIS_COLOR, font: { size: 8 } }, grid: { color: GRID_COLOR } },
     },
   });
 
@@ -775,8 +1161,8 @@ function renderCompChart(r) {
   for (const row of data) {
     const d = String(row.start_date || '');
     byDate[d] = byDate[d] || { r: 0, h: 0, diff: 0 };
-    byDate[d].r    += row.total_events_raid    || 0;
-    byDate[d].h    += row.total_events_hive    || 0;
+    byDate[d].r    += row.total_events_raid     || 0;
+    byDate[d].h    += row.total_events_hive     || 0;
     byDate[d].diff += row.total_events_diff_pct || 0;
   }
   const dates = Object.keys(byDate).sort();
@@ -787,8 +1173,8 @@ function renderCompChart(r) {
     data: {
       labels: dates,
       datasets: [
-        { label: 'RAID', data: dates.map(d => byDate[d].r), backgroundColor: 'rgba(225,26,61,.45)',  borderRadius: 3 },
-        { label: 'Hive', data: dates.map(d => byDate[d].h), backgroundColor: 'rgba(167,139,250,.4)', borderRadius: 3 },
+        { label: 'RAID', data: dates.map(d => byDate[d].r), backgroundColor: 'rgba(225,26,61,.45)', borderRadius: 3 },
+        { label: 'Hive', data: dates.map(d => byDate[d].h), backgroundColor: 'rgba(167,139,250,.40)', borderRadius: 3 },
       ],
     },
     options: {
@@ -796,24 +1182,18 @@ function renderCompChart(r) {
       plugins: { legend: { labels: { color: AXIS_COLOR, font: { size: 9 } } } },
       scales: {
         x: { ticks: { color: AXIS_COLOR, font: { size: 8 }, maxRotation: 45 }, grid: { color: GRID_COLOR } },
-        y: { ticks: { color: AXIS_COLOR, font: { size: 8 } },                  grid: { color: GRID_COLOR } },
+        y: { ticks: { color: AXIS_COLOR, font: { size: 8 } }, grid: { color: GRID_COLOR } },
       },
     },
   });
-
   charts.diff = new Chart(document.getElementById('diffChart'), {
     type: 'line',
     data: {
       labels: dates,
       datasets: [{
-        label: 'Diff %',
-        data: dates.map(d => byDate[d].diff),
-        borderColor: '#F59E0B',
-        backgroundColor: 'rgba(245,158,11,.09)',
-        fill: true,
-        tension: .35,
-        pointRadius: 3,
-        pointHoverRadius: 5,
+        label: 'Diff %', data: dates.map(d => byDate[d].diff),
+        borderColor: '#F0B441', backgroundColor: 'rgba(240,180,65,.09)',
+        fill: true, tension: .35, pointRadius: 3, pointHoverRadius: 5,
       }],
     },
     options: {
@@ -821,20 +1201,18 @@ function renderCompChart(r) {
       plugins: { legend: { labels: { color: AXIS_COLOR, font: { size: 9 } } } },
       scales: {
         x: { ticks: { color: AXIS_COLOR, font: { size: 8 }, maxRotation: 45 }, grid: { color: GRID_COLOR } },
-        y: { ticks: { color: AXIS_COLOR, font: { size: 8 } },                  grid: { color: GRID_COLOR } },
+        y: { ticks: { color: AXIS_COLOR, font: { size: 8 } }, grid: { color: GRID_COLOR } },
       },
     },
   });
 }
 
-// ── Tabs & tables ──────────────────────────────────────────────────────────────
+// ── Tabs ─────────────────────────────────────────────────────────────────────
 function renderTabs() {
   const bar  = document.getElementById('tabsBar');
   const body = document.getElementById('tabsBody');
-  bar.innerHTML = '';
-  body.innerHTML = '';
-  bar.innerHTML  += mkTab('_all', 'All Components', true);
-  body.innerHTML += `<div class="tab-panel active" id="tp__all">${buildAllTable()}</div>`;
+  bar.innerHTML  = mkTab('_all', 'All Components', true);
+  body.innerHTML = `<div class="tab-panel active" id="tp__all">${buildAllTable()}</div>`;
   for (const [k, r] of Object.entries(currentResults)) {
     bar.innerHTML  += mkTab(k, r.label);
     body.innerHTML += `<div class="tab-panel" id="tp_${k}">${buildCompPanel(r)}</div>`;
@@ -864,10 +1242,10 @@ function buildAllTable() {
     total += r.total_amount || 0;
     rows  += `<tr><td>${r.group}</td><td>${r.label}</td><td>${fmtN(r.total_events)}</td><td>${fmt(r.total_amount)}</td></tr>`;
   }
-  rows += `<tr style="border-top:2px solid var(--border2)">
-    <td colspan="2" style="color:var(--accent);font-weight:700">TOTAL</td>
+  rows += `<tr style="border-top:2px solid var(--line-2)">
+    <td colspan="2" style="color:var(--jazz-red);font-weight:700">TOTAL</td>
     <td></td>
-    <td style="color:var(--accent);font-weight:700">${fmt(total)}</td>
+    <td style="color:var(--jazz-red);font-weight:700">${fmt(total)}</td>
   </tr>`;
   return `<div class="tbl-wrap"><table>
     <thead><tr><th>Group</th><th>Component</th><th>Events</th><th>Amount (PKR)</th></tr></thead>
@@ -877,46 +1255,50 @@ function buildAllTable() {
 
 function buildCompPanel(r) {
   let out = '';
-
-  // ── Inline errors (Task 7) ─────────────────────────────────────────────────
+  if (r.no_query?.length) {
+    out += `<div style="background:rgba(240,180,65,.06);border:1px solid rgba(240,180,65,.22);
+             border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:10px;color:var(--warn)">
+      <strong>NO QUERY REGISTERED</strong> — this component has no ${r.no_query.map(s=>s.toUpperCase()).join(' or ')} query.
+      Add one under <a href="/admin/queries" style="color:inherit;text-decoration:underline">Admin → Query Manager</a>.
+    </div>`;
+  }
   if (r.errors && Object.keys(r.errors).length) {
     for (const [src, msg] of Object.entries(r.errors)) {
-      out += `<div style="background:rgba(240,64,64,.08);border:1px solid rgba(240,64,64,.25);
-               border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:12px;font-size:10px;color:var(--danger)">
-        <strong style="text-transform:uppercase">${src} ERROR</strong><br/>
-        <span style="color:var(--text2);word-break:break-all;font-family:'DM Mono',monospace">${msg}</span>
+      const isNet = /network|vpn|reach|timed out|connect|socket/i.test(msg);
+      out += `<div style="background:rgba(231,61,92,.08);border:1px solid rgba(231,61,92,.25);
+               border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:10px;color:var(--err)">
+        <strong style="text-transform:uppercase">${src} ERROR${isNet ? ' — CHECK VPN' : ''}</strong><br/>
+        <span style="color:var(--ink-2);word-break:break-all;font-family:'Geist Mono',monospace">${msg}</span>
       </div>`;
     }
   }
-
   if (r.comparison_rows?.length) {
-    out += `<div style="font-size:9px;color:var(--success);letter-spacing:.10em;margin-bottom:9px;font-weight:700;font-family:'DM Mono',monospace">RAID VS HIVE COMPARISON</div>`;
+    out += `<div style="font-size:9px;color:var(--ok);letter-spacing:.10em;margin-bottom:9px;font-weight:700;font-family:'Geist Mono',monospace">RAID VS HIVE COMPARISON</div>`;
     out += mkTable(r.comparison_rows, ['start_date','total_events_raid','total_events_hive','total_events_diff','total_events_diff_pct','total_amount_raid','total_amount_hive','preferred_source']);
   } else {
     if (r.raid_rows?.length) {
-      out += `<div style="font-size:9px;color:#E88FAA;letter-spacing:.10em;margin-bottom:8px;font-weight:700;font-family:'DM Mono',monospace">RAID</div>`;
+      out += `<div style="font-size:9px;color:#E88FAA;letter-spacing:.10em;margin-bottom:8px;font-weight:700;font-family:'Geist Mono',monospace">RAID</div>`;
       out += mkTable(r.raid_rows, Object.keys(r.raid_rows[0]).filter(k => !k.startsWith('_')));
     }
     if (r.hive_rows?.length) {
-      out += `<div style="font-size:9px;color:#a78bfa;letter-spacing:.10em;margin-top:16px;margin-bottom:8px;font-weight:700;font-family:'DM Mono',monospace">HIVE</div>`;
+      out += `<div style="font-size:9px;color:#a78bfa;letter-spacing:.10em;margin-top:16px;margin-bottom:8px;font-weight:700;font-family:'Geist Mono',monospace">HIVE</div>`;
       out += mkTable(r.hive_rows, Object.keys(r.hive_rows[0]).filter(k => !k.startsWith('_')));
     }
   }
-
-  return out || '<p style="color:var(--text2);padding:10px">No data for this component.</p>';
+  return out || '<p style="color:var(--ink-3);padding:10px">No data for this component.</p>';
 }
 
 function mkTable(rows, cols) {
-  if (!rows?.length) return '<p style="color:var(--text2)">No rows.</p>';
+  if (!rows?.length) return '<p style="color:var(--ink-3)">No rows.</p>';
   const ths = cols.map(c => `<th>${c.replace(/_/g, ' ')}</th>`).join('');
   const trs = rows.map(row => {
     const tds = cols.map(c => {
       const v = row[c];
-      if (c === 'preferred_source')     return `<td class="src-${v}">${v || ''}</td>`;
-      if (c.includes('diff_pct'))       { const cl = v > 0 ? 'pos' : v < 0 ? 'neg' : 'zer'; return `<td class="${cl}">${typeof v === 'number' ? v.toFixed(2) + '%' : v}</td>`; }
-      if (c.includes('diff'))           { const cl = v > 0 ? 'pos' : v < 0 ? 'neg' : 'zer'; return `<td class="${cl}">${fmt(v)}</td>`; }
-      if (c.includes('amount'))         return `<td>${fmt(v)}</td>`;
-      if (c.includes('event'))          return `<td>${fmtN(v)}</td>`;
+      if (c === 'preferred_source')    return `<td class="src-${v}">${v || ''}</td>`;
+      if (c.includes('diff_pct'))      { const cl = v > 0 ? 'pos' : v < 0 ? 'neg' : 'zer'; return `<td class="${cl}">${typeof v === 'number' ? v.toFixed(2) + '%' : v}</td>`; }
+      if (c.includes('diff'))          { const cl = v > 0 ? 'pos' : v < 0 ? 'neg' : 'zer'; return `<td class="${cl}">${fmt(v)}</td>`; }
+      if (c.includes('amount'))        return `<td>${fmt(v)}</td>`;
+      if (c.includes('event'))         return `<td>${fmtN(v)}</td>`;
       return `<td>${v ?? '—'}</td>`;
     }).join('');
     return `<tr>${tds}</tr>`;
@@ -924,7 +1306,7 @@ function mkTable(rows, cols) {
   return `<div class="tbl-wrap"><table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table></div>`;
 }
 
-// ── Utils ──────────────────────────────────────────────────────────────────────
+// ── Utils ────────────────────────────────────────────────────────────────────
 function fmt(n)  { return typeof n === 'number' ? n.toLocaleString('en', { maximumFractionDigits: 0 }) : (n ?? '—') }
 function fmtN(n) { return typeof n === 'number' ? n.toLocaleString() : (n ?? '—') }
 function notify(msg, type) {
