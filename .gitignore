@@ -6,3 +6,6 @@ portal.db
 instance/
 .venv/
 venv/
+*.txt
+*.db-shm
+*.db-wal
