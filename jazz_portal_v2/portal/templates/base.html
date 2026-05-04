@@ -125,13 +125,12 @@ body {
   text-decoration: none; margin-right: 22px; flex-shrink: 0;
 }
 .nav__mark {
-  width: 30px; height: 30px; border-radius: 8px;
-  background: var(--jazz-grad);
+  width: 30px; height: 30px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  color: #fff; flex-shrink: 0;
+  flex-shrink: 0; overflow: hidden;
   box-shadow: 0 2px 12px rgba(225,26,61,.30);
 }
-.nav__mark svg { width: 16px; height: 16px }
+.nav__mark img { width: 30px; height: 30px; object-fit: cover; border-radius: 50% }
 .nav__brand-name {
   font-size: 13px; font-weight: 600; color: var(--ink);
   letter-spacing: -.02em; line-height: 1.15;
@@ -278,10 +277,7 @@ body {
 <nav class="nav">
   <a href="/" class="nav__logo">
     <div class="nav__mark">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 4c-1 4-3 6-5 7 2 0 4 1 5 3 1 4 0 7-3 9 4 0 7-2 8-6"/>
-        <path d="M14 8c1 5 4 9 7 10"/>
-      </svg>
+      <img src="{{ url_for('static', filename='logo_jw_ba_1.jpeg') }}" alt="JazzWorld Business Assurance"/>
     </div>
     <div>
       <div class="nav__brand-name">Jazz BA Portal</div>

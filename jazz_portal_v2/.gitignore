@@ -2,9 +2,21 @@ venv/
 __pycache__/
 *.pyc
 *.pyo
+
+# Database
 portal.db
 portal.db-shm
 portal.db-wal
+portal-*.db
+portal-*.db-shm
+portal-*.db-wal
+
+# Logs
+flask_out.txt
+flask_err.txt
+*.log
+
+# Env / build
 .env
 *.egg-info/
 dist/
