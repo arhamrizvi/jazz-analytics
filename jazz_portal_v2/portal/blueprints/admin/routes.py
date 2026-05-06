@@ -1,3 +1,5 @@
+import math
+import time
 from datetime import datetime, timezone
 
 from flask import (
@@ -89,6 +91,58 @@ def api_restore_query(query_id, audit_id):
 @admin_required
 def api_query_audit(query_id):
     return jsonify(db.get_query_audit(query_id))
+
+
+@bp.route("/api/queries/<int:query_id>/test", methods=["POST"])
+@admin_required
+def api_test_query(query_id):
+    body       = request.json or {}
+    start_date = body.get("start_date", "").strip()
+    end_date   = body.get("end_date", "").strip()
+    sql_draft  = body.get("query_sql", "").strip()
+
+    if not start_date or not end_date:
+        return jsonify({"ok": False, "error": "start_date and end_date required"}), 400
+
+    q = db.get_query_row(query_id)
+    if not q:
+        return jsonify({"ok": False, "error": "Query not found"}), 404
+
+    sql    = sql_draft or q["query_sql"]
+    source = q["source"]
+
+    def _coerce(v):
+        if v is None:
+            return None
+        try:
+            if isinstance(v, float) and math.isnan(v):
+                return None
+        except TypeError:
+            pass
+        if hasattr(v, "item"):   # numpy scalar → Python native
+            v = v.item()
+        if not isinstance(v, (int, float, str, bool, type(None))):
+            return str(v)
+        return v
+
+    try:
+        from portal.blueprints.revenue_validation.engine import _run_query
+        t0 = time.time()
+        df = _run_query(sql, source, start_date, end_date)
+        elapsed = round(time.time() - t0, 2)
+        df      = df[[c for c in df.columns if not c.startswith("_")]]
+        preview = df.head(50)
+        rows    = [{k: _coerce(v) for k, v in row.items()}
+                   for row in preview.to_dict("records")]
+        return jsonify({
+            "ok":         True,
+            "rows":       rows,
+            "columns":    list(df.columns),
+            "total_rows": len(df),
+            "elapsed":    elapsed,
+        })
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)})
 
 
 # ── Connections ───────────────────────────────────────────────────────────────

@@ -103,12 +103,15 @@ def _compare(df_raid: pd.DataFrame, df_hive: pd.DataFrame,
              indexes: list[str]) -> pd.DataFrame:
     cols = ["total_events", "total_amount"]
 
-    r = df_raid.set_index(indexes)[cols]
-    h = df_hive.set_index(indexes)[cols]
+    # Coerce to float64 before alignment — Oracle returns Decimal types which
+    # become object dtype after align()/fillna(), breaking np.where(...).round()
+    r = df_raid.set_index(indexes)[cols].apply(pd.to_numeric, errors="coerce")
+    h = df_hive.set_index(indexes)[cols].apply(pd.to_numeric, errors="coerce")
     r, h = r.align(h, join="outer")
+    r, h = r.fillna(0), h.fillna(0)
 
     diff = (r - h).rename(columns=lambda c: f"{c}_diff")
-    merged = pd.concat([r.add_suffix("_raid"), h.add_suffix("_hive"), diff], axis=1).fillna(0)
+    merged = pd.concat([r.add_suffix("_raid"), h.add_suffix("_hive"), diff], axis=1)
 
     merged["total_events_diff_pct"] = np.where(
         merged["total_events_raid"] != 0,

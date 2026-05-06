@@ -46,6 +46,20 @@
 .ae-sql::after{content:'';position:absolute;bottom:0;left:0;right:0;height:20px;background:linear-gradient(transparent,#050a0f)}
 .restore-btn{margin-top:6px;font-size:9px;padding:3px 9px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Mono',monospace;transition:all .13s}
 .restore-btn:hover{border-color:var(--warn);color:var(--warn)}
+/* test panel */
+.test-sep{height:1px;background:var(--border);margin:4px 0}
+.test-head{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:4px 0 2px}
+.test-dates{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.test-btn{padding:8px 14px;background:transparent;border:1px solid rgba(139,92,246,.4);border-radius:6px;color:#a78bfa;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all .18s;align-self:flex-end}
+.test-btn:hover{background:rgba(139,92,246,.08);border-color:#a78bfa}
+.test-btn:disabled{opacity:.32;cursor:not-allowed}
+.test-result{margin-top:10px;min-height:0}
+.test-meta{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:7px}
+.test-err{background:rgba(231,61,92,.08);border:1px solid rgba(231,61,92,.25);border-radius:5px;padding:9px 11px;font-size:10px;color:var(--danger);word-break:break-all;font-family:'DM Mono',monospace;white-space:pre-wrap}
+.test-tbl{overflow-x:auto;max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:5px}
+.test-tbl table{font-size:10px;width:100%;border-collapse:collapse}
+.test-tbl th{background:rgba(255,255,255,.03);color:var(--muted);font-size:8px;padding:6px 9px;text-align:left;white-space:nowrap;position:sticky;top:0;border-bottom:1px solid var(--border)}
+.test-tbl td{padding:5px 9px;border-bottom:1px solid rgba(255,255,255,.025);font-family:'DM Mono',monospace;white-space:nowrap}
 {% endblock %}
 {% block content %}
 <div class="admin-wrap">
@@ -79,6 +93,20 @@
           <button class="save-btn" id="saveBtn" onclick="saveQuery()">💾 SAVE</button>
         </div>
         <div class="save-msg" id="saveMsg"></div>
+        <div class="test-sep"></div>
+        <div class="test-head">Test Query</div>
+        <div class="test-dates">
+          <div class="field">
+            <label>Start Date</label>
+            <input type="date" id="testStart"/>
+          </div>
+          <div class="field">
+            <label>End Date</label>
+            <input type="date" id="testEnd"/>
+          </div>
+        </div>
+        <button class="test-btn" id="testBtn" onclick="testQuery()">▶ Run Test</button>
+        <div class="test-result" id="testResult"></div>
       </div>
     </div>
     <!-- Audit -->
@@ -103,6 +131,13 @@
 </div>
 <script>
 const QID={{ q.id }};
+(function(){
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('testStart').max = today;
+  document.getElementById('testStart').value = today;
+  document.getElementById('testEnd').max = today;
+  document.getElementById('testEnd').value = today;
+}());
 async function saveQuery(){
   const sql=document.getElementById('sqlEditor').value.trim();
   const note=document.getElementById('noteField').value.trim()||'manual edit';
@@ -133,6 +168,32 @@ function renderAudit(entries){
     <div class="ae-sql">${esc(e.old_sql)}</div>
     <button class="restore-btn" onclick="restoreVersion(${e.id})">↩ Restore</button>
   </div>`).join('');
+}
+async function testQuery(){
+  const sql = document.getElementById('sqlEditor').value.trim();
+  const sd  = document.getElementById('testStart').value.replace(/-/g,'');
+  const ed  = document.getElementById('testEnd').value.replace(/-/g,'');
+  const btn = document.getElementById('testBtn');
+  const res = document.getElementById('testResult');
+  if (!sql) { res.innerHTML='<div class="test-err">⚠ SQL is empty</div>'; return; }
+  if (!sd || !ed) { res.innerHTML='<div class="test-err">⚠ Select start and end date</div>'; return; }
+  btn.disabled = true;
+  res.innerHTML = '<div class="test-meta">Running…</div>';
+  const r = await fetch(`/admin/api/queries/${QID}/test`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ start_date: sd, end_date: ed, query_sql: sql })
+  });
+  const d = await r.json();
+  btn.disabled = false;
+  if (!d.ok) { res.innerHTML=`<div class="test-err">⚠ ${esc(d.error)}</div>`; return; }
+  if (!d.rows.length) { res.innerHTML='<div class="test-meta">Query returned 0 rows.</div>'; return; }
+  const showing = d.total_rows > 50 ? ` · showing first 50` : '';
+  const ths = d.columns.map(c=>`<th>${esc(c)}</th>`).join('');
+  const trs = d.rows.map(row=>
+    `<tr>${d.columns.map(c=>`<td>${row[c] ?? '—'}</td>`).join('')}</tr>`
+  ).join('');
+  res.innerHTML = `<div class="test-meta">${d.total_rows} rows · ${d.elapsed}s${showing}</div>
+    <div class="test-tbl"><table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table></div>`;
 }
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 document.getElementById('sqlEditor').addEventListener('keydown',e=>{

@@ -434,6 +434,36 @@ tr:hover td { background: rgba(255,255,255,.015) }
 .zer { color: var(--ink-3) }
 .src-raid { color: #E88FAA }
 .src-hive { color: #a78bfa }
+th.src-raid { color: #E88FAA }
+th.src-hive { color: #a78bfa }
+
+/* ── SOURCE BADGE (per-component panel header) ──────────────────── */
+.src-badge {
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:8px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+  font-family:'Geist Mono',monospace; padding:3px 8px; border-radius:4px;
+  margin-bottom:12px;
+}
+.src-badge-raid { background:rgba(232,143,170,.10); color:#E88FAA; border:1px solid rgba(232,143,170,.25) }
+.src-badge-hive { background:rgba(167,139,250,.10); color:#a78bfa; border:1px solid rgba(167,139,250,.25) }
+.src-badge-both { background:rgba(0,201,245,.08);  color:var(--accent); border:1px solid rgba(0,201,245,.20) }
+
+/* ── BOTH-MODE SUMMARY CARD ─────────────────────────────────────── */
+.sc-src-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:3px }
+.sc-src-label { font-size:8px; font-weight:700; letter-spacing:.10em; font-family:'Geist Mono',monospace; text-transform:uppercase }
+.sc-src-val { font-size:13px; font-weight:600; color:var(--ink); font-family:'Geist Mono',monospace }
+.sc-delta { font-size:11px; font-weight:600; margin-top:6px; padding-top:6px; font-family:'Geist Mono',monospace; border-top:1px solid var(--line) }
+.sc-delta-pct { font-size:9.5px; font-weight:400; opacity:.8 }
+
+/* ── COMPONENT DIFF HEADER ──────────────────────────────────────── */
+.diff-hdr {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:10px;
+  background:var(--bg-4); border:1px solid var(--line-2);
+  border-radius:8px; padding:12px 14px; margin-bottom:14px;
+}
+.diff-col { display:flex; flex-direction:column; gap:4px }
+.diff-lbl { font-size:8px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; font-family:'Geist Mono',monospace; color:var(--ink-3) }
+.diff-val { font-size:12px; font-weight:600; font-family:'Geist Mono',monospace; color:var(--ink) }
 
 /* ── EMPTY STATE ────────────────────────────────────────────────── */
 .empty {
@@ -611,7 +641,7 @@ tr:hover td { background: rgba(255,255,255,.015) }
             <svg viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.5L13 6"/><path d="M13 3v3h-3"/></svg>
             Refresh
           </button>
-          <button class="head-btn">
+          <button class="head-btn" onclick="downloadReport()">
             <svg viewBox="0 0 16 16"><path d="M8 2.5v8M4.5 7l3.5 3.5L11.5 7M3 13h10"/></svg>
             Report
           </button>
@@ -704,6 +734,13 @@ const SRC_HINTS = {
   // restore run-by name
   const saved = localStorage.getItem('rv_run_by');
   if (saved) document.getElementById('runBy').value = saved;
+
+  // block future dates on all date inputs
+  const today = new Date().toISOString().split('T')[0];
+  ['gStart','gEnd','rStart','rEnd','hStart','hEnd'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.max = today;
+  });
 
   // init segmented toggle indicator
   const ind  = document.getElementById('segInd');
@@ -1055,28 +1092,78 @@ async function loadLastRun() {
 }
 
 // ── Summary ──────────────────────────────────────────────────────────────────
+function isBothRun() {
+  return Object.values(currentResults).some(r => r.source_used === 'both');
+}
+
 function renderSummary() {
-  let total = 0, tEvt = 0;
+  const both   = isBothRun();
   const groups = {};
+  let tRa = 0, tHa = 0, tRe = 0, tHe = 0, total = 0, tEvt = 0;
+
   for (const r of Object.values(currentResults)) {
-    total += r.total_amount || 0;
-    tEvt  += r.total_events || 0;
     const g = r.group;
-    groups[g] = groups[g] || { a: 0, e: 0 };
-    groups[g].a += r.total_amount || 0;
-    groups[g].e += r.total_events || 0;
+    if (both) {
+      groups[g] = groups[g] || { ra: 0, ha: 0, re: 0, he: 0 };
+      groups[g].ra += r.raid_total_amount || 0;
+      groups[g].ha += r.hive_total_amount || 0;
+      groups[g].re += r.raid_total_events || 0;
+      groups[g].he += r.hive_total_events || 0;
+      tRa  += r.raid_total_amount || 0;
+      tHa  += r.hive_total_amount || 0;
+      tRe  += r.raid_total_events || 0;
+      tHe  += r.hive_total_events || 0;
+    } else {
+      groups[g] = groups[g] || { a: 0, e: 0 };
+      groups[g].a += r.total_amount || 0;
+      groups[g].e += r.total_events || 0;
+      total += r.total_amount || 0;
+      tEvt  += r.total_events || 0;
+    }
   }
-  let html = mkCard('Total Revenue', total, tEvt, '#E11A3D');
-  for (const [g, d] of Object.entries(groups))
-    html += mkCard(g, d.a, d.e, GRP_COLORS[g] || '#E11A3D');
+
+  let html = '';
+  if (both) {
+    html  = mkBothCard('Total Revenue', tRa, tHa, tRe, tHe, '#E11A3D');
+    for (const [g, d] of Object.entries(groups))
+      html += mkBothCard(g, d.ra, d.ha, d.re, d.he, GRP_COLORS[g] || '#E11A3D');
+  } else {
+    html  = mkCard('Total Revenue', total, tEvt, '#E11A3D');
+    for (const [g, d] of Object.entries(groups))
+      html += mkCard(g, d.a, d.e, GRP_COLORS[g] || '#E11A3D');
+  }
   document.getElementById('sumGrid').innerHTML = html;
   document.getElementById('sumArea').style.display = 'block';
 }
+
 function mkCard(name, amt, evt, col) {
   return `<div class="sum-card" style="--sc-c:${col}">
     <div class="sc-name">${name}</div>
     <div class="sc-val">${fmt(amt)}</div>
     <div class="sc-evt">${fmtN(evt)} events</div>
+  </div>`;
+}
+
+function mkBothCard(name, rAmt, hAmt, rEvt, hEvt, col) {
+  const dAmt  = rAmt - hAmt;
+  const dEvt  = rEvt - hEvt;
+  const pAmt  = rAmt ? ((dAmt / rAmt) * 100).toFixed(1) : '0.0';
+  const pEvt  = rEvt ? ((dEvt / rEvt) * 100).toFixed(1) : '0.0';
+  const dCls  = dAmt > 0 ? 'pos' : dAmt < 0 ? 'neg' : 'zer';
+  const eCls  = dEvt > 0 ? 'pos' : dEvt < 0 ? 'neg' : 'zer';
+  const s     = v => v >= 0 ? '+' : '';
+  return `<div class="sum-card" style="--sc-c:${col}">
+    <div class="sc-name">${name}</div>
+    <div class="sc-src-row">
+      <span class="sc-src-label src-raid">RAID</span>
+      <span class="sc-src-val">${fmt(rAmt)}</span>
+    </div>
+    <div class="sc-src-row">
+      <span class="sc-src-label src-hive">HIVE</span>
+      <span class="sc-src-val">${fmt(hAmt)}</span>
+    </div>
+    <div class="sc-delta ${dCls}">${s(dAmt)}${fmt(dAmt)} <span class="sc-delta-pct">(${s(dAmt)}${pAmt}%)</span></div>
+    <div class="sc-evt ${eCls}" style="margin-top:5px">${fmtN(rEvt)} vs ${fmtN(hEvt)} ev &nbsp;·&nbsp; Δ ${s(dEvt)}${fmtN(dEvt)} (${s(dEvt)}${pEvt}%)</div>
   </div>`;
 }
 
@@ -1237,7 +1324,59 @@ function switchTab(id, btn) {
 }
 
 function buildAllTable() {
-  let rows = '', total = 0;
+  const both = isBothRun();
+  let rows = '';
+
+  if (both) {
+    let tRa = 0, tHa = 0;
+    for (const r of Object.values(currentResults)) {
+      const ra  = r.raid_total_amount || 0;
+      const ha  = r.hive_total_amount || 0;
+      const re  = r.raid_total_events || 0;
+      const he  = r.hive_total_events || 0;
+      const dA  = ra - ha;
+      const dE  = re - he;
+      const pE  = re ? ((dE / re) * 100).toFixed(1) + '%' : '—';
+      const dEc = dE > 0 ? 'pos' : dE < 0 ? 'neg' : 'zer';
+      const dAc = dA > 0 ? 'pos' : dA < 0 ? 'neg' : 'zer';
+      const s   = v => v >= 0 ? '+' : '';
+      tRa += ra; tHa += ha;
+      rows += `<tr>
+        <td>${r.group}</td><td>${r.label}</td>
+        <td>${fmtN(re)}</td>
+        <td>${fmtN(he)}</td>
+        <td class="${dEc}">${s(dE)}${fmtN(dE)}</td>
+        <td class="${dEc}">${s(dE)}${pE}</td>
+        <td>${fmt(ra)}</td>
+        <td>${fmt(ha)}</td>
+        <td class="${dAc}">${s(dA)}${fmt(dA)}</td>
+      </tr>`;
+    }
+    const dT  = tRa - tHa;
+    const dTc = dT > 0 ? 'pos' : dT < 0 ? 'neg' : 'zer';
+    const s   = v => v >= 0 ? '+' : '';
+    rows += `<tr style="border-top:2px solid var(--line-2)">
+      <td colspan="2" style="color:var(--jazz-red);font-weight:700">TOTAL</td>
+      <td colspan="4"></td>
+      <td style="color:#E88FAA;font-weight:700">${fmt(tRa)}</td>
+      <td style="color:#a78bfa;font-weight:700">${fmt(tHa)}</td>
+      <td class="${dTc}" style="font-weight:700">${s(dT)}${fmt(dT)}</td>
+    </tr>`;
+    return `<div class="tbl-wrap"><table>
+      <thead><tr>
+        <th>Group</th><th>Component</th>
+        <th class="src-raid">RAID Events</th>
+        <th class="src-hive">HIVE Events</th>
+        <th>Δ Events</th><th>Δ%</th>
+        <th class="src-raid">RAID Amt</th>
+        <th class="src-hive">HIVE Amt</th>
+        <th>Δ Amt</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  }
+
+  let total = 0;
   for (const r of Object.values(currentResults)) {
     total += r.total_amount || 0;
     rows  += `<tr><td>${r.group}</td><td>${r.label}</td><td>${fmtN(r.total_events)}</td><td>${fmt(r.total_amount)}</td></tr>`;
@@ -1253,8 +1392,49 @@ function buildAllTable() {
   </table></div>`;
 }
 
+function buildDiffHeader(r) {
+  const rEvt = r.raid_total_events || 0;
+  const hEvt = r.hive_total_events || 0;
+  const rAmt = r.raid_total_amount || 0;
+  const hAmt = r.hive_total_amount || 0;
+  const dEvt = rEvt - hEvt;
+  const dAmt = rAmt - hAmt;
+  const pEvt = rEvt ? ((dEvt / rEvt) * 100).toFixed(2) : '0.00';
+  const pAmt = rAmt ? ((dAmt / rAmt) * 100).toFixed(2) : '0.00';
+  const eC   = dEvt > 0 ? 'pos' : dEvt < 0 ? 'neg' : 'zer';
+  const aC   = dAmt > 0 ? 'pos' : dAmt < 0 ? 'neg' : 'zer';
+  const s    = v => v >= 0 ? '+' : '';
+  return `<div class="diff-hdr">
+    <div class="diff-col">
+      <span class="diff-lbl src-raid">RAID</span>
+      <span class="diff-val">${fmtN(rEvt)} events</span>
+      <span class="diff-val" style="font-size:11px;color:var(--ink-2)">${fmt(rAmt)} PKR</span>
+    </div>
+    <div class="diff-col">
+      <span class="diff-lbl src-hive">HIVE</span>
+      <span class="diff-val">${fmtN(hEvt)} events</span>
+      <span class="diff-val" style="font-size:11px;color:var(--ink-2)">${fmt(hAmt)} PKR</span>
+    </div>
+    <div class="diff-col">
+      <span class="diff-lbl">Δ Events</span>
+      <span class="diff-val ${eC}">${s(dEvt)}${fmtN(dEvt)}</span>
+      <span class="diff-val ${eC}" style="font-size:10px">(${s(dEvt)}${pEvt}%)</span>
+    </div>
+    <div class="diff-col">
+      <span class="diff-lbl">Δ Amount</span>
+      <span class="diff-val ${aC}">${s(dAmt)}${fmt(dAmt)}</span>
+      <span class="diff-val ${aC}" style="font-size:10px">(${s(dAmt)}${pAmt}%)</span>
+    </div>
+  </div>`;
+}
+
 function buildCompPanel(r) {
   let out = '';
+  const src = r.source_used;
+  if (src) {
+    const label = src === 'both' ? '⬡ RAID + HIVE' : src === 'raid' ? '◆ RAID' : '◈ HIVE';
+    out += `<span class="src-badge src-badge-${src}">${label}</span>`;
+  }
   if (r.no_query?.length) {
     out += `<div style="background:rgba(240,180,65,.06);border:1px solid rgba(240,180,65,.22);
              border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:10px;color:var(--warn)">
@@ -1272,8 +1452,11 @@ function buildCompPanel(r) {
       </div>`;
     }
   }
+  if (r.source_used === 'both' && r.raid_total_events !== undefined && r.hive_total_events !== undefined) {
+    out += buildDiffHeader(r);
+  }
   if (r.comparison_rows?.length) {
-    out += `<div style="font-size:9px;color:var(--ok);letter-spacing:.10em;margin-bottom:9px;font-weight:700;font-family:'Geist Mono',monospace">RAID VS HIVE COMPARISON</div>`;
+    out += `<div style="font-size:9px;color:var(--ok);letter-spacing:.10em;margin-bottom:9px;font-weight:700;font-family:'Geist Mono',monospace">RAID VS HIVE — PER DATE BREAKDOWN</div>`;
     out += mkTable(r.comparison_rows, ['start_date','total_events_raid','total_events_hive','total_events_diff','total_events_diff_pct','total_amount_raid','total_amount_hive','preferred_source']);
   } else {
     if (r.raid_rows?.length) {
@@ -1304,6 +1487,57 @@ function mkTable(rows, cols) {
     return `<tr>${tds}</tr>`;
   }).join('');
   return `<div class="tbl-wrap"><table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table></div>`;
+}
+
+// ── Report / CSV export ──────────────────────────────────────────────────────
+function downloadReport() {
+  if (!currentResults || !Object.keys(currentResults).length) {
+    notify('No results to export — run validation first', 'err');
+    return;
+  }
+  const both = isBothRun();
+  const sd   = document.getElementById('gStart').value || 'unknown';
+  const ed   = document.getElementById('gEnd').value   || 'unknown';
+  const rows = [];
+
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const row = (...cols) => cols.map(q).join(',');
+
+  if (both) {
+    rows.push(row('Group','Component','RAID Events','HIVE Events','Δ Events','Δ%','RAID Amount (PKR)','HIVE Amount (PKR)','Δ Amount (PKR)'));
+    let tRe=0, tHe=0, tRa=0, tHa=0;
+    for (const r of Object.values(currentResults)) {
+      const re=r.raid_total_events||0, he=r.hive_total_events||0;
+      const ra=r.raid_total_amount||0, ha=r.hive_total_amount||0;
+      const dE=re-he, dA=ra-ha;
+      const pE=re ? ((dE/re)*100).toFixed(2)+'%' : '0.00%';
+      tRe+=re; tHe+=he; tRa+=ra; tHa+=ha;
+      rows.push(row(r.group, r.label, re, he, dE, pE, ra.toFixed(0), ha.toFixed(0), dA.toFixed(0)));
+    }
+    const dT=tRa-tHa, dTE=tRe-tHe;
+    const pT=tRe ? ((dTE/tRe)*100).toFixed(2)+'%' : '0.00%';
+    rows.push(row('TOTAL','',tRe,tHe,dTE,pT,tRa.toFixed(0),tHa.toFixed(0),dT.toFixed(0)));
+  } else {
+    rows.push(row('Group','Component','Events','Amount (PKR)'));
+    let total=0;
+    for (const r of Object.values(currentResults)) {
+      total += r.total_amount||0;
+      rows.push(row(r.group, r.label, r.total_events||0, (r.total_amount||0).toFixed(0)));
+    }
+    rows.push(row('TOTAL','','',total.toFixed(0)));
+  }
+
+  const csv  = rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `rv_report_${sd}_to_${ed}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  notify('Report downloaded', 'ok');
 }
 
 // ── Utils ────────────────────────────────────────────────────────────────────
