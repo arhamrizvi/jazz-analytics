@@ -80,10 +80,10 @@ def _run_query(sql: str, source: str, start_date: str, end_date: str) -> pd.Data
         raw_sd   = _to_oracle_date(start_date)   # YYYYMMDD — for tables that store dates without dashes
         raw_ed   = _to_oracle_date(end_date)
         rendered = (sql
-                    .replace("{start_date}", hive_sd)
-                    .replace("{end_date}",   hive_ed)
                     .replace("{start_date_raw}", raw_sd)
-                    .replace("{end_date_raw}",   raw_ed))
+                    .replace("{end_date_raw}",   raw_ed)
+                    .replace("{start_date}",     hive_sd)
+                    .replace("{end_date}",       hive_ed))
         conn = conn_mgr.get_hive()
         try:
             df = pd.read_sql(rendered, conn)
@@ -108,7 +108,7 @@ def _compare(df_raid: pd.DataFrame, df_hive: pd.DataFrame,
     r = df_raid.set_index(indexes)[cols].apply(pd.to_numeric, errors="coerce")
     h = df_hive.set_index(indexes)[cols].apply(pd.to_numeric, errors="coerce")
     r, h = r.align(h, join="outer")
-    r, h = r.fillna(0), h.fillna(0)
+    r, h = r.fillna(0).astype("float64"), h.fillna(0).astype("float64")
 
     diff = (r - h).rename(columns=lambda c: f"{c}_diff")
     merged = pd.concat([r.add_suffix("_raid"), h.add_suffix("_hive"), diff], axis=1)
